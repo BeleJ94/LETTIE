@@ -1,0 +1,23 @@
+CREATE TABLE correspondents (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    site_id INT UNSIGNED NOT NULL,
+    type ENUM('person', 'organization') NOT NULL,
+    name VARCHAR(190) NOT NULL,
+    organization VARCHAR(190) NULL,
+    email VARCHAR(190) NULL,
+    phone VARCHAR(50) NULL,
+    address_line1 VARCHAR(190) NULL,
+    address_line2 VARCHAR(190) NULL,
+    postal_code VARCHAR(20) NULL,
+    city VARCHAR(100) NULL,
+    country CHAR(2) NOT NULL DEFAULT 'FR',
+    notes TEXT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_by INT UNSIGNED NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_correspondents_site_name (site_id, name),
+    CONSTRAINT fk_correspondents_site FOREIGN KEY (site_id) REFERENCES sites (id),
+    CONSTRAINT fk_correspondents_created_by FOREIGN KEY (created_by) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

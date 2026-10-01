@@ -1,0 +1,27 @@
+CREATE TABLE assignments (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    mail_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NULL,
+    department_id INT UNSIGNED NULL,
+    role ENUM('for_action', 'for_information') NOT NULL,
+    status ENUM('active', 'completed', 'reassigned', 'cancelled') NOT NULL DEFAULT 'active',
+    instructions TEXT NULL,
+    due_date DATE NULL,
+    -- Set when the assignment went to a delegate because user was absent.
+    delegated_from_user_id INT UNSIGNED NULL,
+    assigned_by INT UNSIGNED NOT NULL,
+    created_at DATETIME NOT NULL,
+    ended_at DATETIME NULL,
+    ended_by INT UNSIGNED NULL,
+    PRIMARY KEY (id),
+    KEY idx_assignments_mail (mail_id, status),
+    KEY idx_assignments_user (user_id, status),
+    KEY idx_assignments_department (department_id, status),
+    CONSTRAINT chk_assignments_target CHECK (user_id IS NOT NULL OR department_id IS NOT NULL),
+    CONSTRAINT fk_assignments_mail FOREIGN KEY (mail_id) REFERENCES mails (id),
+    CONSTRAINT fk_assignments_user FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT fk_assignments_department FOREIGN KEY (department_id) REFERENCES departments (id),
+    CONSTRAINT fk_assignments_delegated_from FOREIGN KEY (delegated_from_user_id) REFERENCES users (id),
+    CONSTRAINT fk_assignments_assigned_by FOREIGN KEY (assigned_by) REFERENCES users (id),
+    CONSTRAINT fk_assignments_ended_by FOREIGN KEY (ended_by) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

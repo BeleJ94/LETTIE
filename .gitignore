@@ -1,0 +1,8 @@
+/vendor/
+/.env
+/.phpunit.cache/
+/storage/
+# Dev tooling (npm is never deployed)
+/node_modules/
+# Demo data for screenshots/guide (tools/demo/seed.php)
+/tools/demo/demo.json

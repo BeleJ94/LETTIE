@@ -1,0 +1,16 @@
+{
+  "name": "lettie-dev-tools",
+  "private": true,
+  "description": "Development tooling only (tests of the pure JS modules, screenshots, user guide). Nothing here is deployed: the application ships no npm dependency.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test \"tests/js/*.test.js\"",
+    "screenshots": "node tools/playwright/screenshots.mjs",
+    "guide": "node tools/playwright/guide.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

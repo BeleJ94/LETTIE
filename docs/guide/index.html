@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Lettie — Guide utilisateur</title>
+<!-- Source of the user guide. Rendered by tools/playwright/guide.mjs into docs/guide/index.html and the PDF.
+     1 octobre 2026 and ../../public/assets/vendor/ibm-plex-sans-5.1.0 are replaced at build time; images come from docs/guide/screenshots/. -->
+<style>
+@font-face { font-family: "IBM Plex Sans"; font-weight: 400; src: url("../../public/assets/vendor/ibm-plex-sans-5.1.0/IBMPlexSans-Regular-Latin1.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-style: italic; src: url("../../public/assets/vendor/ibm-plex-sans-5.1.0/IBMPlexSans-Italic-Latin1.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 600; src: url("../../public/assets/vendor/ibm-plex-sans-5.1.0/IBMPlexSans-SemiBold-Latin1.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 700; src: url("../../public/assets/vendor/ibm-plex-sans-5.1.0/IBMPlexSans-Bold-Latin1.woff2") format("woff2"); }
+
+:root { --blue: #1f5fd1; --ink: #161b22; --muted: #5b6573; --line: #dde1e7; --soft: #eef4ff; --warn: #9a6700; --warn-soft: #fff4d4; }
+* { box-sizing: border-box; }
+html { font-size: 10.5pt; }
+body { margin: 0; font-family: "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); line-height: 1.55; }
+main { max-width: 180mm; margin: 0 auto; }
+h1, h2, h3 { line-height: 1.2; }
+h2 { font-size: 18pt; color: var(--blue); margin: 0 0 4mm; padding-top: 2mm; break-before: page; }
+h3 { font-size: 12.5pt; margin: 7mm 0 2mm; }
+p, li { orphans: 3; widows: 3; }
+a { color: var(--blue); }
+.section-number { color: var(--muted); font-weight: 400; margin-right: 2mm; }
+
+/* Cover */
+.cover { height: 250mm; display: flex; flex-direction: column; justify-content: space-between; padding: 24mm 0 8mm; break-after: page; }
+.cover__brand { font-weight: 700; color: var(--blue); letter-spacing: .04em; text-transform: uppercase; font-size: 11pt; }
+.cover h1 { font-size: 34pt; margin: 6mm 0 4mm; }
+.cover__subtitle { font-size: 14pt; color: var(--muted); max-width: 140mm; }
+.cover__band { height: 60mm; border-radius: 6mm; background: linear-gradient(150deg, #0b2458 0%, #143e8f 45%, #1f5fd1 100%); position: relative; overflow: hidden; }
+.cover__band img { position: absolute; right: 8mm; top: 50%; transform: translateY(-50%); height: 92%; width: auto; }
+.cover__meta { color: var(--muted); font-size: 10pt; }
+
+/* Table of contents */
+.toc { break-after: page; }
+.toc h2 { break-before: auto; }
+.toc ol { padding-left: 6mm; columns: 2; column-gap: 10mm; }
+.toc li { margin-bottom: 1.5mm; break-inside: avoid; }
+
+/* Content */
+figure { margin: 4mm 0 6mm; break-inside: avoid; }
+figure img { width: 100%; border: 1px solid var(--line); border-radius: 2mm; display: block; }
+figure.phone { display: inline-block; width: 48%; vertical-align: top; margin-right: 2%; }
+figcaption { font-size: 9pt; color: var(--muted); margin-top: 1.5mm; }
+.steps { counter-reset: step; list-style: none; padding: 0; }
+.steps > li { counter-increment: step; position: relative; padding-left: 9mm; margin-bottom: 2.5mm; }
+.steps > li::before { content: counter(step); position: absolute; left: 0; top: .1em; width: 6mm; height: 6mm; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 700; font-size: 9pt; display: flex; align-items: center; justify-content: center; }
+.tip, .warning { padding: 3mm 4mm; border-radius: 2mm; margin: 4mm 0; break-inside: avoid; }
+.tip { background: var(--soft); border-left: 3px solid var(--blue); }
+.warning { background: var(--warn-soft); border-left: 3px solid var(--warn); }
+.tip strong, .warning strong { display: block; margin-bottom: 1mm; }
+table { width: 100%; border-collapse: collapse; margin: 3mm 0 5mm; font-size: 9.5pt; break-inside: avoid; }
+th, td { border: 1px solid var(--line); padding: 1.8mm 2.5mm; text-align: left; vertical-align: top; }
+th { background: #f6f7f9; font-weight: 600; }
+td.yes { color: #1a7f37; font-weight: 600; text-align: center; }
+td.no { color: #9aa3b0; text-align: center; }
+kbd, .ui { font-family: inherit; font-weight: 600; background: #f1f3f6; border: 1px solid var(--line); border-radius: 1mm; padding: 0 1.2mm; white-space: nowrap; }
+code { font-family: "IBM Plex Sans", monospace; background: #f1f3f6; padding: 0 1mm; border-radius: 1mm; }
+
+@page { size: A4; margin: 18mm 15mm 18mm 15mm; }
+@media screen { body { background: #f6f7f9; } main { background: #fff; padding: 12mm 15mm; margin: 8mm auto; box-shadow: 0 2px 12px rgba(0,0,0,.08); } .cover { height: auto; min-height: 220mm; } }
+</style>
+</head>
+<body>
+<main>
+
+<section class="cover">
+    <div>
+        <div class="cover__brand">Lettie</div>
+        <h1>Guide utilisateur</h1>
+        <p class="cover__subtitle">Enregistrer, affecter, traiter et suivre le courrier entrant et sortant de votre organisation.</p>
+    </div>
+    <div class="cover__band"><img src="../../public/assets/img/login-hero.svg" alt=""></div>
+    <p class="cover__meta">Version du 1 octobre 2026 — les captures d'écran proviennent d'un jeu de données de démonstration.</p>
+</section>
+
+<section class="toc">
+    <h2>Sommaire</h2>
+    <ol>
+        <li>Présentation et rôles</li>
+        <li>Se connecter</li>
+        <li>Le tableau de bord</li>
+        <li>Enregistrer un courrier</li>
+        <li>Pièces jointes et bordereau</li>
+        <li>Retrouver un courrier</li>
+        <li>Traiter un courrier</li>
+        <li>Répondre à un courrier</li>
+        <li>Absences et délégation</li>
+        <li>Notifications et rappels</li>
+        <li>Registre et exports</li>
+        <li>Statistiques</li>
+        <li>Sur téléphone : le mode terrain</li>
+        <li>Administration : conservation</li>
+        <li>Annexe : les statuts d'un courrier</li>
+    </ol>
+</section>
+
+<h2><span class="section-number">1</span>Présentation et rôles</h2>
+<p>Lettie centralise le courrier de votre organisation. Chaque courrier reçu ou envoyé est <strong>enregistré</strong> avec un numéro unique, <strong>affecté</strong> à la personne ou au service qui doit le traiter, puis <strong>suivi</strong> jusqu'à sa clôture. Toutes les actions sont conservées dans un historique : on sait toujours qui a fait quoi, et quand.</p>
+<p>Ce que vous pouvez faire dépend de votre rôle :</p>
+<table>
+    <thead><tr><th>Action</th><th>Secrétariat</th><th>Chef de service</th><th>Agent</th><th>Direction</th><th>Administrateur</th></tr></thead>
+    <tbody>
+        <tr><td>Consulter le courrier de son site</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓ (tous sites)</td><td class="yes">✓ (tous sites)</td></tr>
+        <tr><td>Enregistrer un courrier</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+        <tr><td>Affecter, réaffecter, archiver</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+        <tr><td>Traiter, clôturer</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">ses courriers</td><td class="no">—</td><td class="yes">✓</td></tr>
+        <tr><td>Annoter</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>Gérer les correspondants</td><td class="yes">✓</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+        <tr><td>Statistiques</td><td class="no">—</td><td class="yes">✓</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+        <tr><td>Règles de conservation</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+    </tbody>
+</table>
+<p>Le menu de gauche n'affiche que les pages auxquelles vous avez accès.</p>
+
+<h2><span class="section-number">2</span>Se connecter</h2>
+<figure><img src="screenshots/01-connexion.png" alt="Page de connexion"><figcaption>La page de connexion.</figcaption></figure>
+<ol class="steps">
+    <li>Saisissez votre <strong>adresse e-mail professionnelle</strong> et votre <strong>mot de passe</strong>.</li>
+    <li>Cliquez sur <span class="ui">Se connecter</span>. Si vous aviez ouvert un lien vers un courrier, Lettie vous y conduit directement.</li>
+</ol>
+<div class="warning"><strong>Compte bloqué temporairement</strong>Après 5 erreurs de mot de passe, la connexion est bloquée pendant 15 minutes. Le message indique le temps restant. Si vous avez oublié votre mot de passe, adressez-vous à votre administrateur.</div>
+<p>En haut de l'écran, vous pouvez choisir la <strong>langue</strong> (français ou anglais) et vous <strong>déconnecter</strong> avec l'icône <span class="ui">⎋</span>. Pensez à vous déconnecter sur un poste partagé.</p>
+
+<h2><span class="section-number">3</span>Le tableau de bord</h2>
+<figure><img src="screenshots/02-tableau-de-bord.png" alt="Tableau de bord"><figcaption>Le tableau de bord du secrétariat : ses échéances et celles de tout le service.</figcaption></figure>
+<p>Dès la connexion, le tableau de bord résume les <strong>échéances</strong> :</p>
+<ul>
+    <li><strong>En retard</strong> : courriers dont l'échéance est dépassée et qui ne sont ni répondus ni clos ;</li>
+    <li><strong>Aujourd'hui</strong> et <strong>7 prochains jours</strong> : ce qui arrive à échéance.</li>
+</ul>
+<p>« Mes échéances » compte les courriers qui vous sont affectés (et ceux d'un collègue absent que vous remplacez). Le secrétariat, les chefs de service et la direction voient aussi le total de leur périmètre. La liste « Prochaines échéances » permet d'ouvrir chaque courrier d'un clic.</p>
+
+<h2><span class="section-number">4</span>Enregistrer un courrier</h2>
+<p>Depuis <span class="ui">Courrier</span>, cliquez sur <span class="ui">Nouveau courrier entrant</span> ou <span class="ui">Nouveau courrier sortant</span>.</p>
+<figure><img src="screenshots/04-nouveau-courrier.png" alt="Formulaire d'enregistrement"><figcaption>Le formulaire d'enregistrement : la recherche du correspondant propose les fiches existantes dès 2 lettres.</figcaption></figure>
+<ol class="steps">
+    <li><strong>Objet</strong> : résumez le courrier en une ligne.</li>
+    <li><strong>Correspondant</strong> : tapez au moins deux lettres du nom ou de l'organisme, puis choisissez dans la liste. S'il n'existe pas encore, utilisez le lien <span class="ui">Créer un correspondant</span>.</li>
+    <li><strong>Reçu le</strong> (ou <strong>Envoyé le</strong>), <strong>canal</strong> (courrier postal, e-mail, recommandé…), <strong>service</strong>, <strong>priorité</strong> et <strong>confidentialité</strong>.</li>
+    <li><strong>Échéance</strong> : laissez-la vide pour qu'elle soit calculée automatiquement.</li>
+    <li>Cliquez sur <span class="ui">Enregistrer</span>.</li>
+</ol>
+<p>Lettie attribue alors le <strong>numéro d'enregistrement</strong> : <code>ENT-2026-00042</code> pour un courrier entrant, <code>SOR-2026-00017</code> pour un courrier sortant. La numérotation repart à 1 chaque année ; elle ne comporte ni doublon ni trou.</p>
+<div class="tip"><strong>Échéance automatique</strong>Sans date saisie, l'échéance d'un courrier entrant est calculée en jours ouvrés (hors week-ends et jours fériés) selon la priorité : urgente 2 jours, haute 5 jours, normale 10 jours, basse 20 jours.</div>
+<div class="tip"><strong>Confidentialité « Secret »</strong>L'objet d'un courrier secret n'apparaît jamais dans les documents qui sortent de Lettie : exports, registre imprimé, bordereau.</div>
+
+<h2><span class="section-number">5</span>Pièces jointes et bordereau</h2>
+<p>Sur la fiche d'un courrier, la zone <strong>Pièces jointes</strong> permet d'ajouter le scan du courrier et les documents associés : PDF, JPEG, PNG, WebP ou TIFF, 20 Mo au maximum. Les PDF et les images s'ouvrent dans le navigateur avec <span class="ui">Afficher</span> ; <span class="ui">Télécharger</span> les enregistre sur votre poste.</p>
+<p>Le bouton <span class="ui">Bordereau</span> ouvre le <strong>bordereau d'enregistrement</strong>, prêt à imprimer et à agrafer au courrier papier. Son code-barres reprend le numéro d'enregistrement et peut être lu par une douchette.</p>
+<figure><img src="screenshots/07-bordereau.png" alt="Bordereau d'enregistrement"><figcaption>Le bordereau : numéro, code-barres, expéditeur, objet, service, échéance et cases de visa.</figcaption></figure>
+
+<h2><span class="section-number">6</span>Retrouver un courrier</h2>
+<figure><img src="screenshots/03-liste-courrier.png" alt="Liste du courrier"><figcaption>La liste du courrier avec ses filtres.</figcaption></figure>
+<ul>
+    <li><strong>Rechercher</strong> : le champ de recherche porte sur le numéro, l'objet, le correspondant et la référence externe.</li>
+    <li><strong>Filtrer</strong> par sens, statut, priorité, service, période, <strong>Mes courriers</strong> ou <strong>En retard uniquement</strong>. Le tableau se met à jour immédiatement.</li>
+    <li><strong>Trier</strong> en cliquant sur l'en-tête d'une colonne.</li>
+    <li><strong>Exporter</strong> la sélection affichée avec <span class="ui">Excel</span> ou <span class="ui">PDF</span> (voir chapitre 11).</li>
+</ul>
+
+<h2><span class="section-number">7</span>Traiter un courrier</h2>
+<figure><img src="screenshots/05-fiche-courrier.png" alt="Fiche d'un courrier"><figcaption>La fiche d'un courrier : les actions possibles apparaissent sous le titre, selon le statut et votre rôle.</figcaption></figure>
+<h3>Affecter</h3>
+<p>Dans <strong>Affectations</strong>, choisissez une personne ou un service, le rôle — <strong>pour traitement</strong> (le responsable, un seul à la fois) ou <strong>pour information</strong> (autant que nécessaire) — une échéance et des consignes. La personne affectée reçoit une notification.</p>
+<p>Pour changer de responsable, utilisez <span class="ui">Réaffecter</span> : l'ancien responsable est déchargé et le motif est conservé dans l'historique.</p>
+<h3>Traiter</h3>
+<ul>
+    <li><span class="ui">Prendre en charge</span> : le courrier passe « En cours ».</li>
+    <li><span class="ui">En attente de réponse</span> : vous attendez un élément extérieur.</li>
+    <li><strong>Annotations</strong> : notez l'avancement. Une annotation <em>privée</em> n'est visible que par vous.</li>
+    <li><span class="ui">Clôturer</span> : le traitement est terminé. Une confirmation est demandée et vous pouvez laisser un commentaire.</li>
+</ul>
+<figure><img src="screenshots/06-cloture-confirmation.png" alt="Confirmation de clôture"><figcaption>Chaque action importante demande une confirmation.</figcaption></figure>
+<p>En bas de la fiche, l'<strong>historique</strong> retrace chaque modification avec son auteur, sa date, et les valeurs avant / après.</p>
+<div class="tip"><strong>Agents</strong>Un agent agit sur les courriers qui lui sont affectés, ou sur ceux d'un collègue absent qu'il remplace. Pour un autre courrier, demandez une affectation au secrétariat ou à votre chef de service.</div>
+
+<h2><span class="section-number">8</span>Répondre à un courrier</h2>
+<p>Sur un courrier entrant, le bouton <span class="ui">Répondre</span> ouvre un courrier sortant déjà rempli (correspondant, service, objet « Re: … »).</p>
+<figure><img src="screenshots/08-reponse.png" alt="Réponse à un courrier"><figcaption>Le courrier auquel on répond est rappelé en haut du formulaire.</figcaption></figure>
+<p>À l'enregistrement, la réponse reçoit son numéro <code>SOR-…</code>, elle est <strong>liée</strong> au courrier entrant, et celui-ci est <strong>clôturé automatiquement</strong>. Les deux fiches affichent le lien dans <strong>Courriers liés</strong>.</p>
+<p>Si la réponse a déjà été enregistrée, ouvrez-la et utilisez <span class="ui">Lier comme réponse</span> en saisissant le numéro du courrier entrant.</p>
+
+<h2><span class="section-number">9</span>Absences et délégation</h2>
+<figure><img src="screenshots/09-absences.png" alt="Absences"><figcaption>Déclarer une absence et désigner la personne qui vous remplace.</figcaption></figure>
+<p>Avant un congé, déclarez votre absence dans <span class="ui">Absences</span> : dates et délégué. Pendant cette période :</p>
+<ul>
+    <li>les nouveaux courriers qui vous sont affectés sont confiés à votre <strong>délégué</strong>, avec la mention « En remplacement de … » ;</li>
+    <li>votre délégué peut traiter les courriers qui vous étaient déjà affectés, et reçoit aussi les rappels d'échéance.</li>
+</ul>
+<p>Le secrétariat et les chefs de service peuvent déclarer l'absence d'un collègue. Une absence se termine d'elle-même à la date prévue ; elle peut aussi être annulée.</p>
+
+<h2><span class="section-number">10</span>Notifications et rappels</h2>
+<figure><img src="screenshots/10-notifications.png" alt="Notifications"><figcaption>La page Notifications ; la cloche en haut de l'écran indique le nombre de notifications non lues.</figcaption></figure>
+<p>Vous êtes prévenu dans Lettie quand :</p>
+<ul>
+    <li>un courrier vous est <strong>affecté</strong> ;</li>
+    <li>un de vos courriers arrive à <strong>échéance</strong> dans les 3 jours (une fois) ;</li>
+    <li>un de vos courriers est <strong>en retard</strong> (chaque jour, jusqu'à son traitement).</li>
+</ul>
+<p>Cliquez sur une notification pour ouvrir le courrier ; elle est alors marquée comme lue. Les rappels sont calculés chaque matin.</p>
+
+<h2><span class="section-number">11</span>Registre et exports</h2>
+<figure><img src="screenshots/11-registre.png" alt="Registre du courrier"><figcaption>Le registre : choisir le sens et la période, puis le format.</figcaption></figure>
+<p>Le <strong>registre du courrier</strong> est la liste chronologique des courriers enregistrés. Choisissez le sens (entrant ou sortant) et la période, puis <span class="ui">Excel</span> ou <span class="ui">PDF</span>.</p>
+<ul>
+    <li><strong>Excel</strong> : les dates sont de vraies dates (triables et filtrables), la ligne d'en-tête reste visible.</li>
+    <li><strong>PDF</strong> : format A4, prêt à imprimer ou à archiver, avec la date de génération et la pagination.</li>
+</ul>
+<p>La liste du courrier s'exporte de la même façon, avec les filtres et le tri affichés.</p>
+
+<h2><span class="section-number">12</span>Statistiques</h2>
+<figure><img src="screenshots/12-statistiques.png" alt="Statistiques"><figcaption>Volumes, délais, retards et principaux correspondants sur la période choisie.</figcaption></figure>
+<p>La page <span class="ui">Statistiques</span> présente, pour la période et le service choisis : les volumes entrants et sortants, le <strong>délai moyen de traitement</strong> (de la réception à la clôture) et sa médiane, la part des courriers clos après l'échéance, les retards en cours par ancienneté et les correspondants les plus fréquents. Sous chaque graphique, <span class="ui">Afficher les données</span> présente les mêmes chiffres sous forme de tableau.</p>
+
+<h2><span class="section-number">13</span>Sur téléphone : le mode terrain</h2>
+<p>Lettie s'utilise aussi sur téléphone et tablette. Le <strong>mode terrain</strong> (icône <span class="ui">📱</span> en haut de l'écran) agrandit le texte et les boutons, renforce les contrastes et place la navigation en bas de l'écran, à portée de pouce. Le choix est mémorisé sur l'appareil.</p>
+<figure class="phone"><img src="screenshots/14-mobile-terrain.png" alt="Tableau de bord sur téléphone"><figcaption>Le tableau de bord en mode terrain.</figcaption></figure><figure class="phone"><img src="screenshots/15-mobile-liste.png" alt="Liste sur téléphone"><figcaption>La liste : chaque courrier devient une carte.</figcaption></figure>
+<p>Un bandeau vous avertit si la connexion est perdue : les modifications ne peuvent alors pas être enregistrées.</p>
+
+<h2><span class="section-number">14</span>Administration : conservation</h2>
+<figure><img src="screenshots/13-conservation.png" alt="Règles de conservation"><figcaption>Les règles de conservation et le suivi de la tâche quotidienne.</figcaption></figure>
+<p>Les <strong>règles de conservation</strong> s'appliquent chaque nuit aux courriers clos depuis la durée indiquée :</p>
+<ul>
+    <li><strong>Archiver</strong> : le courrier est figé et ne peut plus être modifié ;</li>
+    <li><strong>Supprimer les fichiers joints</strong> d'un courrier archivé : le nom, la taille et l'empreinte de chaque fichier restent enregistrés ;</li>
+    <li><strong>Revue</strong> : les administrateurs sont prévenus pour décider du sort du dossier.</li>
+</ul>
+<div class="warning"><strong>Aucune destruction automatique</strong>Lettie ne supprime jamais un courrier de lui-même. L'élimination d'un dossier reste une décision humaine, conformément aux règles d'archivage de votre organisation.</div>
+<p>L'encadré <strong>Tâche quotidienne</strong> indique les dernières exécutions des rappels et des règles. S'il signale que la tâche n'a jamais tourné, prévenez votre service informatique.</p>
+
+<h2><span class="section-number">15</span>Annexe : les statuts d'un courrier</h2>
+<table>
+    <thead><tr><th>Statut</th><th>Signification</th><th>Actions possibles</th></tr></thead>
+    <tbody>
+        <tr><td>Enregistré</td><td>Le courrier vient d'être saisi.</td><td>Affecter, clôturer</td></tr>
+        <tr><td>Affecté</td><td>Un responsable est désigné.</td><td>Prendre en charge, réaffecter, clôturer</td></tr>
+        <tr><td>En cours</td><td>Le responsable traite le dossier.</td><td>Mettre en attente, réaffecter, clôturer</td></tr>
+        <tr><td>En attente de réponse</td><td>Un élément extérieur est attendu.</td><td>Reprendre, réaffecter, clôturer</td></tr>
+        <tr><td>Répondu</td><td>Une réponse a été apportée.</td><td>Clôturer, rouvrir</td></tr>
+        <tr><td>Clos</td><td>Le traitement est terminé.</td><td>Rouvrir, archiver</td></tr>
+        <tr><td>Archivé</td><td>Le dossier est figé définitivement.</td><td>—</td></tr>
+    </tbody>
+</table>
+<p>Un courrier est <strong>en retard</strong> lorsque son échéance est dépassée alors qu'il n'est ni répondu, ni clos, ni archivé.</p>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         executionOrder="defects"
+         failOnWarning="true"
+         failOnRisky="true"
+         beStrictAboutOutputDuringTests="true">
+    <testsuites>
+        <!-- No database, no network: pure code (Core, Domain, middleware, architecture rules). -->
+        <testsuite name="unit">
+            <directory>tests/Core</directory>
+            <directory>tests/Domain</directory>
+            <directory>tests/Middleware</directory>
+            <directory>tests/Architecture</directory>
+            <directory>tests/Tools</directory>
+        </testsuite>
+        <!-- Repositories and services against the TEST_DB_NAME database (recreated on each run). -->
+        <testsuite name="integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+        <!-- HTTP requests through the Kernel: routes, middleware, controllers, views, database. -->
+        <testsuite name="functional">
+            <directory>tests/Functional</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <!-- The database named here is DROPPED and recreated: it must end with "_test". -->
+        <env name="TEST_DB_HOST" value="127.0.0.1"/>
+        <env name="TEST_DB_PORT" value="3306"/>
+        <env name="TEST_DB_NAME" value="lettie_test"/>
+        <env name="TEST_DB_USER" value="root"/>
+        <env name="TEST_DB_PASSWORD" value=""/>
+    </php>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+</phpunit>

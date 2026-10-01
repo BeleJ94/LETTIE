@@ -1,0 +1,25 @@
+# Local development under http://localhost/Lettie/ (XAMPP).
+# Every request is served from public/: .env, vendor/, storage/, app/… are never reachable.
+# In production, point the site's document root to public/ instead (see docs/scheduled-task-plesk.md).
+# Requires APP_BASE_PATH=/Lettie in .env.
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /Lettie/
+
+    # Anything not already inside public/ is mapped into it.
+    RewriteCond %{REQUEST_URI} !^/Lettie/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Without mod_rewrite, refuse everything rather than expose the project.
+<IfModule !mod_rewrite.c>
+    Require all denied
+</IfModule>
+
+# Defence in depth: dotfiles (.env, .git…) are never served.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

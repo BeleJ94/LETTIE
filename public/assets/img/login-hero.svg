@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 520" fill="none" role="img" aria-hidden="true">
+  <!-- Lettie login illustration: incoming mail → registration → assignment → deadline & traceability.
+       Shapes only (no text, no fonts, no scripts); drawn in white over the blue hero background. -->
+  <defs>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e8f0ff"/>
+    </linearGradient>
+    <linearGradient id="envelope" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dbe7ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#08214f" flood-opacity=".35"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1 1 L8 5 L1 9" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </marker>
+  </defs>
+
+  <!-- Soft background shapes -->
+  <!-- Kept entirely inside the viewBox: anything crossing its edge would be cut into a straight line. -->
+  <circle cx="520" cy="130" r="100" fill="#ffffff" opacity=".06"/>
+  <circle cx="130" cy="380" r="120" fill="#ffffff" opacity=".05"/>
+  <circle cx="330" cy="250" r="210" stroke="#ffffff" stroke-opacity=".08" stroke-width="1.5"/>
+  <circle cx="330" cy="250" r="160" stroke="#ffffff" stroke-opacity=".06" stroke-width="1.5" stroke-dasharray="4 8"/>
+
+  <!-- 1. Incoming letters (stack) -->
+  <g filter="url(#shadow)">
+    <g transform="translate(40 150) rotate(-10)">
+      <rect width="150" height="96" rx="10" fill="url(#envelope)" opacity=".75"/>
+      <path d="M8 12 L75 58 L142 12" stroke="#8fb0ea" stroke-width="3" stroke-linejoin="round"/>
+    </g>
+    <g transform="translate(52 186) rotate(-3)">
+      <rect width="150" height="96" rx="10" fill="url(#envelope)"/>
+      <path d="M8 12 L75 58 L142 12" stroke="#7aa0e6" stroke-width="3" stroke-linejoin="round"/>
+      <!-- stamp + postmark -->
+      <rect x="112" y="64" width="26" height="22" rx="3" fill="#f5a623"/>
+      <rect x="116" y="68" width="18" height="14" rx="2" stroke="#ffffff" stroke-width="1.5" opacity=".8"/>
+      <circle cx="104" cy="74" r="13" stroke="#1f5fd1" stroke-opacity=".45" stroke-width="2"/>
+      <path d="M86 70 q6 -4 12 0 t12 0 t12 0" stroke="#1f5fd1" stroke-opacity=".4" stroke-width="1.8" fill="none"/>
+      <path d="M86 78 q6 -4 12 0 t12 0 t12 0" stroke="#1f5fd1" stroke-opacity=".4" stroke-width="1.8" fill="none"/>
+      <rect x="18" y="66" width="56" height="5" rx="2.5" fill="#9db8ea"/>
+      <rect x="18" y="77" width="40" height="5" rx="2.5" fill="#c3d4f3"/>
+    </g>
+  </g>
+
+  <!-- Flow: letters → registration -->
+  <path d="M212 236 C 240 236, 244 214, 270 212" stroke="#ffffff" stroke-opacity=".85" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round" marker-end="url(#arrow)"/>
+
+  <!-- 2. Registered document -->
+  <g filter="url(#shadow)">
+    <rect x="276" y="118" width="168" height="220" rx="14" fill="url(#card)"/>
+    <!-- header band -->
+    <path d="M276 132 a14 14 0 0 1 14 -14 h140 a14 14 0 0 1 14 14 v26 h-168 z" fill="#1f5fd1"/>
+    <circle cx="298" cy="138" r="8" fill="#ffffff" opacity=".9"/>
+    <path d="M294 138 l3 3 l6 -6" stroke="#1f5fd1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="314" y="133" width="72" height="10" rx="5" fill="#ffffff" opacity=".85"/>
+    <!-- reference pill (ENT-2026-00001) -->
+    <rect x="292" y="174" width="96" height="20" rx="10" fill="#dbe7ff"/>
+    <rect x="300" y="181" width="24" height="6" rx="3" fill="#1f5fd1"/>
+    <rect x="330" y="181" width="16" height="6" rx="3" fill="#5b92f0"/>
+    <rect x="352" y="181" width="28" height="6" rx="3" fill="#5b92f0"/>
+    <!-- priority badge -->
+    <rect x="396" y="174" width="34" height="20" rx="10" fill="#fff1d6"/>
+    <circle cx="407" cy="184" r="4" fill="#f5a623"/>
+    <rect x="414" y="181" width="10" height="6" rx="3" fill="#f5a623" opacity=".7"/>
+    <!-- text lines -->
+    <rect x="292" y="210" width="136" height="7" rx="3.5" fill="#b9cbee"/>
+    <rect x="292" y="225" width="120" height="7" rx="3.5" fill="#cfdcf4"/>
+    <rect x="292" y="240" width="128" height="7" rx="3.5" fill="#cfdcf4"/>
+    <rect x="292" y="255" width="84" height="7" rx="3.5" fill="#cfdcf4"/>
+    <!-- barcode -->
+    <g fill="#27447a" opacity=".75">
+      <rect x="292" y="290" width="3" height="30"/><rect x="298" y="290" width="1.5" height="30"/>
+      <rect x="302" y="290" width="4" height="30"/><rect x="309" y="290" width="2" height="30"/>
+      <rect x="314" y="290" width="1.5" height="30"/><rect x="318" y="290" width="4" height="30"/>
+      <rect x="325" y="290" width="2" height="30"/><rect x="330" y="290" width="3" height="30"/>
+      <rect x="336" y="290" width="1.5" height="30"/><rect x="340" y="290" width="4" height="30"/>
+      <rect x="347" y="290" width="2" height="30"/><rect x="352" y="290" width="1.5" height="30"/>
+      <rect x="356" y="290" width="3" height="30"/>
+    </g>
+    <!-- attachment clip -->
+    <path d="M414 290 v26 a9 9 0 0 1 -18 0 v-30 a6 6 0 0 1 12 0 v26" stroke="#5b92f0" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- Flow: routing to people -->
+  <g stroke="#ffffff" stroke-opacity=".85" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round" fill="none">
+    <path d="M452 190 C 488 190, 492 132, 522 128" marker-end="url(#arrow)"/>
+    <path d="M452 228 L 516 228" marker-end="url(#arrow)"/>
+    <path d="M452 266 C 488 266, 492 324, 522 328" marker-end="url(#arrow)"/>
+  </g>
+
+  <!-- 3. Assignees -->
+  <g filter="url(#shadow)">
+    <g transform="translate(528 100)">
+      <circle cx="28" cy="28" r="28" fill="#ffffff"/>
+      <circle cx="28" cy="22" r="9" fill="#5b92f0"/>
+      <path d="M12 44 a16 12 0 0 1 32 0" fill="#5b92f0"/>
+      <circle cx="50" cy="8" r="10" fill="#22c55e"/>
+      <path d="M45 8 l3.5 3.5 l6 -6.5" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g transform="translate(524 200)">
+      <circle cx="32" cy="28" r="30" fill="#ffffff"/>
+      <circle cx="32" cy="22" r="10" fill="#1f5fd1"/>
+      <path d="M14 46 a18 13 0 0 1 36 0" fill="#1f5fd1"/>
+      <circle cx="56" cy="6" r="10" fill="#f5a623"/>
+      <path d="M56 1 v5.5 l3.5 2.5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g transform="translate(528 300)">
+      <circle cx="28" cy="28" r="28" fill="#ffffff"/>
+      <circle cx="28" cy="22" r="9" fill="#8fb0ea"/>
+      <path d="M12 44 a16 12 0 0 1 32 0" fill="#8fb0ea"/>
+    </g>
+  </g>
+
+  <!-- 4. Deadline calendar -->
+  <g filter="url(#shadow)" transform="translate(236 376)">
+    <rect width="96" height="92" rx="12" fill="#ffffff"/>
+    <path d="M0 12 a12 12 0 0 1 12 -12 h72 a12 12 0 0 1 12 12 v14 h-96 z" fill="#f5a623"/>
+    <rect x="22" y="-8" width="6" height="16" rx="3" fill="#b86e00"/>
+    <rect x="68" y="-8" width="6" height="16" rx="3" fill="#b86e00"/>
+    <g fill="#cfdcf4">
+      <rect x="12" y="36" width="14" height="12" rx="3"/><rect x="31" y="36" width="14" height="12" rx="3"/>
+      <rect x="50" y="36" width="14" height="12" rx="3"/><rect x="69" y="36" width="14" height="12" rx="3"/>
+      <rect x="12" y="54" width="14" height="12" rx="3"/><rect x="31" y="54" width="14" height="12" rx="3"/>
+      <rect x="69" y="54" width="14" height="12" rx="3"/>
+      <rect x="12" y="72" width="14" height="12" rx="3"/><rect x="31" y="72" width="14" height="12" rx="3"/>
+    </g>
+    <rect x="50" y="54" width="14" height="12" rx="3" fill="#f5a623"/>
+    <circle cx="57" cy="60" r="12" stroke="#f5a623" stroke-width="2.5" fill="none"/>
+  </g>
+
+  <!-- 5. Traceability: lock + history -->
+  <g filter="url(#shadow)" transform="translate(360 384)">
+    <rect width="176" height="84" rx="12" fill="#ffffff"/>
+    <rect x="16" y="30" width="30" height="24" rx="5" fill="#1f5fd1"/>
+    <path d="M22 30 v-6 a9 9 0 0 1 18 0 v6" stroke="#1f5fd1" stroke-width="3.5" fill="none"/>
+    <circle cx="31" cy="41" r="3" fill="#ffffff"/>
+    <rect x="30" y="41" width="2" height="7" rx="1" fill="#ffffff"/>
+    <g>
+      <circle cx="64" cy="22" r="4" fill="#22c55e"/><rect x="74" y="19" width="80" height="6" rx="3" fill="#cfdcf4"/>
+      <circle cx="64" cy="42" r="4" fill="#5b92f0"/><rect x="74" y="39" width="64" height="6" rx="3" fill="#cfdcf4"/>
+      <circle cx="64" cy="62" r="4" fill="#f5a623"/><rect x="74" y="59" width="72" height="6" rx="3" fill="#cfdcf4"/>
+      <path d="M64 26 v12 M64 46 v12" stroke="#cfdcf4" stroke-width="2"/>
+    </g>
+  </g>
+
+  <!-- Sparkles -->
+  <g fill="#ffffff" opacity=".7">
+    <path d="M246 88 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3 z"/>
+    <path d="M598 430 l2 6 l6 2 l-6 2 l-2 6 l-2 -6 l-6 -2 l6 -2 z" opacity=".8"/>
+    <circle cx="176" cy="96" r="3"/>
+    <circle cx="470" cy="70" r="2.5"/>
+    <circle cx="610" cy="250" r="2.5"/>
+  </g>
+</svg>

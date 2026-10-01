@@ -1,0 +1,56 @@
+{
+    "name": "belej-consulting/lettie",
+    "description": "Lettie - incoming and outgoing mail management",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        },
+        "files": [
+            "app/Core/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/",
+            "Tools\\Demo\\": "tools/demo/src/"
+        }
+    },
+    "scripts": {
+        "test": [
+            "@test:unit",
+            "@test:integration",
+            "@test:functional"
+        ],
+        "test:unit": "@php vendor/bin/phpunit --testsuite unit",
+        "test:integration": "@php vendor/bin/phpunit --testsuite integration",
+        "test:functional": "@php vendor/bin/phpunit --testsuite functional",
+        "migrate": "@php bin/migrate.php",
+        "migrate:status": "@php bin/migrate.php --status",
+        "demo:seed": "@php tools/demo/seed.php",
+        "demo:seed:medium": "@php tools/demo/seed.php --size=medium",
+        "demo:seed:large": "@php -d memory_limit=1G tools/demo/seed.php --size=large"
+    },
+    "scripts-descriptions": {
+        "test": "Runs the unit, integration and functional PHPUnit suites (integration and functional recreate the TEST_DB_NAME database).",
+        "test:unit": "Unit tests only: no database needed.",
+        "test:integration": "Repositories and services against the test database.",
+        "test:functional": "HTTP requests through the Kernel against the test database.",
+        "migrate": "Applies pending database migrations (database from .env).",
+        "migrate:status": "Lists applied and pending migrations.",
+        "demo:seed": "Recreates the lettie_demo database with realistic data (small: ~10 months, for screenshots). Options after --: --seed=N --skip-checks.",
+        "demo:seed:medium": "Demo database with 2 years of activity (~3,500 mails): pagination, exports, filters.",
+        "demo:seed:large": "Demo database with ~100,000 mails (bulk history): performance timings."
+    },
+    "config": {
+        "sort-packages": true,
+        "process-timeout": 900
+    }
+}

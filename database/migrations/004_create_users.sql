@@ -1,0 +1,21 @@
+CREATE TABLE users (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    site_id INT UNSIGNED NOT NULL,
+    department_id INT UNSIGNED NULL,
+    role_id TINYINT UNSIGNED NOT NULL,
+    email VARCHAR(190) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    locale CHAR(2) NOT NULL DEFAULT 'fr',
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    last_login_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_users_email (email),
+    KEY idx_users_site (site_id),
+    CONSTRAINT fk_users_site FOREIGN KEY (site_id) REFERENCES sites (id),
+    CONSTRAINT fk_users_department FOREIGN KEY (department_id) REFERENCES departments (id),
+    CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES roles (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

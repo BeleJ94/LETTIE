@@ -6,15 +6,15 @@
 <!-- Source of the user guide. Rendered by tools/playwright/guide.mjs into docs/guide/index.html and the PDF.
      {{date}} and {{fonts}} are replaced at build time; images come from docs/guide/screenshots/. -->
 <style>
-@font-face { font-family: "IBM Plex Sans"; font-weight: 400; src: url("{{fonts}}/IBMPlexSans-Regular-Latin1.woff2") format("woff2"); }
-@font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-style: italic; src: url("{{fonts}}/IBMPlexSans-Italic-Latin1.woff2") format("woff2"); }
-@font-face { font-family: "IBM Plex Sans"; font-weight: 600; src: url("{{fonts}}/IBMPlexSans-SemiBold-Latin1.woff2") format("woff2"); }
-@font-face { font-family: "IBM Plex Sans"; font-weight: 700; src: url("{{fonts}}/IBMPlexSans-Bold-Latin1.woff2") format("woff2"); }
+@font-face { font-family: "72"; font-weight: 400; src: url("{{fonts}}/72-Regular-full.woff2") format("woff2"); }
+@font-face { font-family: "72"; font-weight: 400; font-style: italic; src: url("{{fonts}}/72-Italic-full.woff2") format("woff2"); }
+@font-face { font-family: "72"; font-weight: 600; src: url("{{fonts}}/72-Semibold-full.woff2") format("woff2"); }
+@font-face { font-family: "72"; font-weight: 700; src: url("{{fonts}}/72-Bold-full.woff2") format("woff2"); }
 
 :root { --blue: #1f5fd1; --ink: #161b22; --muted: #5b6573; --line: #dde1e7; --soft: #eef4ff; --warn: #9a6700; --warn-soft: #fff4d4; }
 * { box-sizing: border-box; }
 html { font-size: 10.5pt; }
-body { margin: 0; font-family: "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); line-height: 1.55; }
+body { margin: 0; font-family: "72", Arial, sans-serif; color: var(--ink); line-height: 1.55; }
 main { max-width: 180mm; margin: 0 auto; }
 h1, h2, h3 { line-height: 1.2; }
 h2 { font-size: 18pt; color: var(--blue); margin: 0 0 4mm; padding-top: 2mm; break-before: page; }
@@ -56,7 +56,7 @@ th { background: #f6f7f9; font-weight: 600; }
 td.yes { color: #1a7f37; font-weight: 600; text-align: center; }
 td.no { color: #9aa3b0; text-align: center; }
 kbd, .ui { font-family: inherit; font-weight: 600; background: #f1f3f6; border: 1px solid var(--line); border-radius: 1mm; padding: 0 1.2mm; white-space: nowrap; }
-code { font-family: "IBM Plex Sans", monospace; background: #f1f3f6; padding: 0 1mm; border-radius: 1mm; }
+code { font-family: "72", monospace; background: #f1f3f6; padding: 0 1mm; border-radius: 1mm; }
 
 @page { size: A4; margin: 18mm 15mm 18mm 15mm; }
 @media screen { body { background: #f6f7f9; } main { background: #fff; padding: 12mm 15mm; margin: 8mm auto; box-shadow: 0 2px 12px rgba(0,0,0,.08); } .cover { height: auto; min-height: 220mm; } }
@@ -90,7 +90,7 @@ code { font-family: "IBM Plex Sans", monospace; background: #f1f3f6; padding: 0 
         <li>Notifications et rappels</li>
         <li>Registre et exports</li>
         <li>Statistiques</li>
-        <li>Sur téléphone : le mode terrain</li>
+        <li>Sur téléphone, thème sombre</li>
         <li>Administration : conservation</li>
         <li>Annexe : les statuts d'un courrier</li>
     </ol>
@@ -214,9 +214,11 @@ code { font-family: "IBM Plex Sans", monospace; background: #f1f3f6; padding: 0 
 <figure><img src="screenshots/12-statistiques.png" alt="Statistiques"><figcaption>Volumes, délais, retards et principaux correspondants sur la période choisie.</figcaption></figure>
 <p>La page <span class="ui">Statistiques</span> présente, pour la période et le service choisis : les volumes entrants et sortants, le <strong>délai moyen de traitement</strong> (de la réception à la clôture) et sa médiane, la part des courriers clos après l'échéance, les retards en cours par ancienneté et les correspondants les plus fréquents. Sous chaque graphique, <span class="ui">Afficher les données</span> présente les mêmes chiffres sous forme de tableau.</p>
 
-<h2><span class="section-number">13</span>Sur téléphone : le mode terrain</h2>
-<p>Lettie s'utilise aussi sur téléphone et tablette. Le <strong>mode terrain</strong> (icône <span class="ui">📱</span> en haut de l'écran) agrandit le texte et les boutons, renforce les contrastes et place la navigation en bas de l'écran, à portée de pouce. Le choix est mémorisé sur l'appareil.</p>
-<figure class="phone"><img src="screenshots/14-mobile-terrain.png" alt="Tableau de bord sur téléphone"><figcaption>Le tableau de bord en mode terrain.</figcaption></figure><figure class="phone"><img src="screenshots/15-mobile-liste.png" alt="Liste sur téléphone"><figcaption>La liste : chaque courrier devient une carte.</figcaption></figure>
+<h2><span class="section-number">13</span>Sur téléphone, thème sombre</h2>
+<p>Lettie s'utilise aussi sur téléphone et tablette. Sur un écran tactile, l'affichage s'adapte tout seul : boutons et champs plus grands, faciles à toucher du doigt. Avec une souris, l'affichage est plus compact pour montrer davantage d'informations.</p>
+<p>Le bouton <span class="ui">🌙</span> en haut de l'écran passe au <strong>thème sombre</strong>, et inversement. Le choix est mémorisé sur l'appareil. Si votre système demande un contraste élevé, Lettie l'applique automatiquement.</p>
+<figure class="phone"><img src="screenshots/14-mobile-accueil.png" alt="Tableau de bord sur téléphone"><figcaption>Le tableau de bord sur téléphone.</figcaption></figure><figure class="phone"><img src="screenshots/15-mobile-liste.png" alt="Liste sur téléphone"><figcaption>La liste : chaque courrier devient une carte.</figcaption></figure>
+<figure><img src="screenshots/16-theme-sombre.png" alt="Liste du courrier en thème sombre"><figcaption>La liste du courrier en thème sombre.</figcaption></figure>
 <p>Un bandeau vous avertit si la connexion est perdue : les modifications ne peuvent alors pas être enregistrées.</p>
 
 <h2><span class="section-number">14</span>Administration : conservation</h2>

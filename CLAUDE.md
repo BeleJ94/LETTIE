@@ -124,3 +124,8 @@ Seul `public/` est exposé par le serveur web.
 - **Documents qui quittent l'application** (exports, registre, bordereau) : l'objet d'un courrier `secret` n'y figure jamais (`Confidentiality::masksSubjectInDocuments`).
 - **Bordereau** : `/mails/{id}/slip`, layout `layouts/print`, code-barres Code 39 en SVG généré côté serveur (`App\Core\Code39`).
 - **Traductions** : les paramètres `:nom` sont remplacés mot entier (`:page` ne touche pas `:pages`), en PHP comme en JS.
+
+## Design & UX
+Toute l'interface suit les règles SAP Fiori décrites ici :
+@docs/FIORI_DESIGN.md
+En cas de conflit sur un sujet d'UI, FIORI_DESIGN.md prévaut.

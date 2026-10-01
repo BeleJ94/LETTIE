@@ -9,12 +9,14 @@ $assets = $basePath . '/assets';
 $vendor = $assets . '/vendor';
 ?>
 <!doctype html>
-<html lang="<?= e($locale ?? 'fr') ?>">
+<html lang="<?= e($locale ?? 'fr') ?>" data-lt-theme-lock="sap_horizon">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= e($csrf->token()) ?>">
     <title><?= e($this->section('title', __('app.name'))) ?></title>
+    <script src="<?= e($assets) ?>/js/lt-theme.js"></script>
+    <link rel="stylesheet" href="<?= e($vendor) ?>/ui5-webcomponents-2.27.2/ui5-fonts.css">
     <link rel="stylesheet" href="<?= e($vendor) ?>/sweetalert2-11.14.5/sweetalert2.min.css">
     <link rel="stylesheet" href="<?= e($assets) ?>/css/app.css">
 </head>
@@ -31,5 +33,6 @@ $vendor = $assets . '/vendor';
 <script src="<?= e($assets) ?>/js/lt-tables.js"></script>
 <script src="<?= e($assets) ?>/js/lt-export.js"></script>
 <script src="<?= e($assets) ?>/js/app.js"></script>
+<script type="module" src="<?= e($vendor) ?>/ui5-webcomponents-2.27.2/ui5.js"></script>
 </body>
 </html>

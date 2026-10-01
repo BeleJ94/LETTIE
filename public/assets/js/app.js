@@ -5,7 +5,7 @@
  *
  *   <body data-base-path data-locale data-timezone data-i18n='{"js":…}'>
  *   <button data-lt-toggle="nav">             mobile navigation drawer
- *   <button data-lt-field-mode>               field mode on/off (remembered)
+ *   <button data-lt-theme-toggle>             light ↔ dark theme (lt-theme.js, remembered)
  *   <form data-lt-confirm="message">          SweetAlert2 confirmation before submit
  *         [data-lt-confirm-title|-button|-danger|-input="field"|-input-label|-input-required]
  *   <table data-lt-table data-url="/api/…">   server-side DataTable;
@@ -18,8 +18,6 @@
 
     var LT = window.LT;
     var body = document.body;
-    var html = document.documentElement;
-    var FIELD_MODE_KEY = 'lt.fieldMode';
 
     /* -------------------------------------------------------------- config */
 
@@ -151,18 +149,18 @@
         }
     });
 
-    /* ---------------------------------------------------------- field mode */
+    /* --------------------------------------------------------------- theme */
 
-    function setFieldMode(on) {
-        html.classList.toggle('lt-field-mode', on);
-        $('[data-lt-field-mode]').attr('aria-pressed', on ? 'true' : 'false')
-            .attr('title', on ? t('js.field_mode.off') : t('js.field_mode.on'));
-        storage.set(FIELD_MODE_KEY, on ? '1' : '0');
+    function showTheme() {
+        var dark = /_(dark|hcb)$/.test(LT.theme.current());
+        $('[data-lt-theme-toggle]').attr('aria-pressed', dark ? 'true' : 'false')
+            .attr('title', dark ? t('js.theme.light') : t('js.theme.dark'));
     }
 
-    setFieldMode(storage.get(FIELD_MODE_KEY, '0') === '1');
-    $(document).on('click', '[data-lt-field-mode]', function () {
-        setFieldMode(!html.classList.contains('lt-field-mode'));
+    showTheme();
+    document.addEventListener('lt:theme-change', showTheme);
+    $(document).on('click', '[data-lt-theme-toggle]', function () {
+        LT.theme.toggle();
     });
 
     function updateOnline() {

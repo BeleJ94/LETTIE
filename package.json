@@ -1,16 +1,26 @@
 {
   "name": "lettie-dev-tools",
   "private": true,
-  "description": "Development tooling only (tests of the pure JS modules, screenshots, user guide). Nothing here is deployed: the application ships no npm dependency.",
+  "description": "Development tooling only (tests of the pure JS modules, UI5 bundle build, screenshots, user guide). Nothing here is deployed: the application ships no npm dependency; the UI5 bundle is built once and committed in public/assets/vendor/.",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "test": "node --test \"tests/js/*.test.js\"",
+    "ui5:build": "node tools/ui5/build-bundle.mjs",
+    "ui5:check": "node tools/ui5/check-browser.mjs",
     "screenshots": "node tools/playwright/screenshots.mjs",
     "guide": "node tools/playwright/guide.mjs"
   },
   "devDependencies": {
+    "@ui5/webcomponents": "2.27.2",
+    "@ui5/webcomponents-base": "2.27.2",
+    "@ui5/webcomponents-fiori": "2.27.2",
+    "@ui5/webcomponents-icons": "2.27.2",
+    "esbuild": "0.28.2",
     "playwright": "1.63.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
   }
 }

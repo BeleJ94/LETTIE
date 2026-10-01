@@ -1,0 +1,126 @@
+/**
+ * Builds the vendored UI5 Web Components bundle (development only: `npm run ui5:build`).
+ *
+ *   public/assets/vendor/ui5-webcomponents-<version>/
+ *     ui5.js            ES module entry: configuration, components, assets, window.LT_UI5
+ *     chunks/           lazily loaded themes, texts and CLDR data (fr, en only)
+ *     ui5-fonts.css     @font-face of the "72" font, pointing to fonts/
+ *     fonts/            72 (woff2) from @sap-theming/theming-base-content
+ *     LICENSE, licenses/ licences of every bundled package
+ *     BUILD.json        versions, themes, languages and components of this build
+ *
+ * The output is committed like the other vendored libraries: the server never runs npm
+ * and nothing is built at deployment. The component list lives in components.mjs.
+ */
+import { build } from 'esbuild';
+import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { FIORI, ICONS, ILLUSTRATIONS, LOCALES, MAIN, THEMES } from './components.mjs';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const root = resolve(here, '../..');
+const modules = join(root, 'node_modules');
+const pkg = (name) => JSON.parse(readFileSync(join(modules, name, 'package.json'), 'utf8'));
+
+const version = pkg('@ui5/webcomponents').version;
+const outDir = join(root, 'public/assets/vendor', `ui5-webcomponents-${version}`);
+
+const entry = [
+    `import ${JSON.stringify('./prelude.js')};`,
+    // Assets: themes, texts and CLDR, filtered below to THEMES and LOCALES.
+    `import '@ui5/webcomponents-fiori/dist/Assets.js';`,
+    ...MAIN.map((c) => `import '@ui5/webcomponents/dist/${c}.js';`),
+    ...FIORI.map((c) => `import '@ui5/webcomponents-fiori/dist/${c}.js';`),
+    ...ILLUSTRATIONS.map((i) => `import '@ui5/webcomponents-fiori/dist/illustrations/${i}.js';`),
+    ...ICONS.map((i) => `import '@ui5/webcomponents-icons/dist/${i}.js';`),
+    `import { boot } from '@ui5/webcomponents-base/dist/Boot.js';`,
+    `import { getTheme, setTheme } from '@ui5/webcomponents-base/dist/config/Theme.js';`,
+    `import { getLanguage, setLanguage } from '@ui5/webcomponents-base/dist/config/Language.js';`,
+    // CLDR loaders registered last, so that UI5's built-in "en" loader (which fetches from
+    // jsDelivr, blocked by the CSP) can never win, whatever the module evaluation order.
+    `import { registerLocaleDataLoader } from '@ui5/webcomponents-base/dist/asset-registries/LocaleData.js';`,
+    ...LOCALES.map((l) => `registerLocaleDataLoader(${JSON.stringify(l)}, async () => (await import('@ui5/webcomponents-localization/dist/generated/assets/cldr/${l}.json')).default);`),
+    `setLanguage(document.documentElement.getAttribute('lang') || 'fr');`,
+    `const api = { getTheme, setTheme, getLanguage, setLanguage, themes: ${JSON.stringify(THEMES)} };`,
+    `window.LT_UI5 = api;`,
+    // Explicit boot: applies the theme variables (--sap*) even on pages without any UI5 component.
+    `boot().then(() => {`,
+    `    document.documentElement.classList.add('lt-ui5-ready');`,
+    `    document.dispatchEvent(new CustomEvent('lt:ui5-ready'));`,
+    `});`,
+    `export { getTheme, setTheme, getLanguage, setLanguage };`,
+].join('\n');
+
+/** Keeps only THEMES and LOCALES in the generated `switch` loaders of the UI5 packages. */
+const assetFilter = {
+    name: 'lettie-asset-filter',
+    setup(b) {
+        const allowed = new Set([...THEMES, ...LOCALES]);
+        b.onLoad({ filter: /[\\/]generated[\\/]json-imports[\\/](Themes|i18n|LocaleData)\.js$/ }, (args) => {
+            const lines = readFileSync(args.path, 'utf8').split('\n');
+            const kept = lines.filter((line) => {
+                const m = line.match(/^\s*case "([^"]+)":/);
+                return m === null || allowed.has(m[1]);
+            });
+            return { contents: kept.join('\n'), loader: 'js', resolveDir: dirname(args.path) };
+        });
+    },
+};
+
+rmSync(outDir, { recursive: true, force: true });
+mkdirSync(outDir, { recursive: true });
+
+const result = await build({
+    stdin: { contents: entry, resolveDir: here, sourcefile: 'ui5-entry.js', loader: 'js' },
+    bundle: true,
+    format: 'esm',
+    splitting: true,
+    outdir: outDir,
+    entryNames: 'ui5',
+    chunkNames: 'chunks/[name]-[hash]',
+    minify: true,
+    target: 'es2022',
+    legalComments: 'none',
+    metafile: true,
+    logLevel: 'warning',
+    plugins: [assetFilter],
+});
+
+/* Fonts: the same @font-face rules as UI5, served from fonts/ instead of jsDelivr. */
+const fontCss = readFileSync(join(modules, '@ui5/webcomponents-base/dist/generated/css/FontFace.css.js'), 'utf8')
+    .replace(/^export default `/, '').replace(/`;?\s*$/, '');
+const fontFiles = [...new Set([...fontCss.matchAll(/baseTheme\/fonts\/([^)]+)\)/g)].map((m) => m[1]))];
+const fontSource = join(modules, '@sap-theming/theming-base-content/content/Base/baseLib/baseTheme/fonts');
+mkdirSync(join(outDir, 'fonts'));
+for (const file of fontFiles) {
+    cpSync(join(fontSource, file), join(outDir, 'fonts', file));
+}
+writeFileSync(join(outDir, 'ui5-fonts.css'),
+    `/* "72" font faces of UI5 Web Components ${version}, served locally (generated by tools/ui5/build-bundle.mjs). */\n`
+    + fontCss.replace(/url\(https:\/\/[^)]*\/baseTheme\/fonts\//g, 'url(fonts/') + '\n');
+
+/* Licences of every package that ended up in the bundle, plus the fonts. */
+const packages = new Set(['@sap-theming/theming-base-content']);
+for (const input of Object.keys(result.metafile.inputs)) {
+    const m = input.replace(/\\/g, '/').match(/node_modules\/((?:@[^/]+\/)?[^/]+)\//);
+    if (m) packages.add(m[1]);
+}
+mkdirSync(join(outDir, 'licenses'));
+const versions = {};
+for (const name of [...packages].sort()) {
+    versions[name] = pkg(name).version;
+    const licence = readdirSync(join(modules, name)).find((f) => /^licen[cs]e/i.test(f));
+    if (licence) cpSync(join(modules, name, licence), join(outDir, 'licenses', `${name.replace('/', '__')}.txt`));
+}
+cpSync(join(modules, '@ui5/webcomponents/LICENSE.txt'), join(outDir, 'LICENSE.txt'));
+
+writeFileSync(join(outDir, 'BUILD.json'), JSON.stringify({
+    generatedBy: 'tools/ui5/build-bundle.mjs',
+    packages: versions,
+    themes: THEMES,
+    locales: LOCALES,
+    components: { main: MAIN, fiori: FIORI, illustrations: ILLUSTRATIONS, icons: ICONS },
+}, null, 2) + '\n');
+
+console.log(`UI5 Web Components ${version} → ${relative(root, outDir)} (${Object.keys(result.metafile.outputs).length} JS files, ${fontFiles.length} fonts, ${packages.size} licences)`);

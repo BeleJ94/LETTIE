@@ -25,7 +25,7 @@ return [
         'register' => 'Registre',
         'mails' => 'Courrier',
         'correspondents' => 'Correspondants',
-        'field_mode' => 'Mode terrain',
+        'dark_theme' => 'Thème sombre',
     ],
     // Sent to the browser (data-i18n) and read by lt-core.js / lt-tables.js / app.js.
     'js' => [
@@ -40,9 +40,9 @@ return [
             'no' => 'Annuler',
             'input_required' => 'Ce champ est obligatoire.',
         ],
-        'field_mode' => [
-            'on' => 'Activer le mode terrain',
-            'off' => 'Quitter le mode terrain',
+        'theme' => [
+            'dark' => 'Passer au thème sombre',
+            'light' => 'Passer au thème clair',
         ],
         'errors' => [
             'network' => 'Impossible de joindre le serveur. Vérifiez votre connexion.',

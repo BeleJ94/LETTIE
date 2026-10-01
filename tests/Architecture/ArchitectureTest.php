@@ -84,7 +84,7 @@ final class ArchitectureTest extends TestCase
             'lucide-0.460.0' => ['lucide.min.js'],
             'exceljs-4.4.0' => ['exceljs.min.js'],
             'pdfmake-0.2.14' => ['pdfmake.min.js', 'vfs_fonts.js'],
-            'ibm-plex-sans-5.1.0' => ['IBMPlexSans-Regular-Latin1.woff2', 'IBMPlexSans-Bold-Latin1.woff2'],
+            'ui5-webcomponents-2.27.2' => ['ui5.js', 'ui5-fonts.css', 'BUILD.json'],
         ];
         foreach ($expected as $dir => $files) {
             foreach ($files as $file) {
@@ -139,14 +139,33 @@ final class ArchitectureTest extends TestCase
         }
     }
 
-    public function testCssFontsPointToVendoredFiles(): void
+    public function testUi5FontsPointToVendoredFiles(): void
     {
-        $css = (string) file_get_contents(self::root() . '/public/assets/css/app.css');
-        preg_match_all('#url\("\.\./vendor/([^"]+)"\)#', $css, $m);
-        self::assertCount(5, $m[1]);
-        foreach ($m[1] as $path) {
-            self::assertFileExists(self::root() . '/public/assets/vendor/' . $path);
+        $dir = self::root() . '/public/assets/vendor/ui5-webcomponents-2.27.2';
+        $css = (string) file_get_contents($dir . '/ui5-fonts.css');
+        preg_match_all('#url\(([^)]+)\)#', $css, $m);
+        self::assertNotEmpty($m[1]);
+        foreach ($m[1] as $url) {
+            self::assertStringStartsWith('fonts/', $url, 'The "72" font is served locally, never from a CDN');
+            self::assertFileExists($dir . '/' . $url);
         }
+    }
+
+    /** docs/FIORI_DESIGN.md §3: colours, fonts and sizes come only from the theme variables. */
+    public function testAppCssUsesOnlyThemeVariables(): void
+    {
+        $css = (string) preg_replace('#/\*.*?\*/#s', '', (string) file_get_contents(self::root() . '/public/assets/css/app.css'));
+        self::assertDoesNotMatchRegularExpression('/#[0-9a-f]{3,8}\b/i', $css, 'Hex colour in app.css');
+        // Only black alpha masks (mask-image) are allowed as colour functions.
+        self::assertDoesNotMatchRegularExpression('/\b(rgb|hsl)a?\((?!0, 0, 0, [.0-9]+\))/i', $css, 'Colour function in app.css');
+        self::assertDoesNotMatchRegularExpression('/font-family:\s*+(?!var\(--sap)/i', $css, 'Font family outside the theme');
+        self::assertDoesNotMatchRegularExpression('/font-size:\s*+(?!var\(--sap)/i', $css, 'Font size outside the theme');
+        self::assertDoesNotMatchRegularExpression('/@font-face/i', $css, 'The "72" font faces are declared by ui5-fonts.css');
+
+        preg_match_all('/(--lt-[a-z0-9-]+)\s*:/', $css, $m);
+        $local = array_values(array_unique($m[1]));
+        sort($local);
+        self::assertSame(['--lt-content-max', '--lt-sidebar-w', '--lt-tap', '--lt-topbar-h', '--lt-transition'], $local, 'Only layout dimensions may be local variables');
     }
 
     public function testViewsContainNoInlineScriptsOrStyles(): void

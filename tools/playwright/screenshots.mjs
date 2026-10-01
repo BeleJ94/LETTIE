@@ -45,8 +45,9 @@ function plan(demo) {
         { file: '11-registre', as: 'secretariat', go: '/register' },
         { file: '12-statistiques', as: 'management', go: '/statistics', wait: 'canvas[data-chart="volumes"]', extra: 1200, fullPage: true },
         { file: '13-conservation', as: 'admin', go: '/retention-rules' },
-        { file: '14-mobile-terrain', as: 'agent', go: '/', viewport: MOBILE, fieldMode: true },
-        { file: '15-mobile-liste', as: 'agent', go: '/mails', viewport: MOBILE, fieldMode: true, wait: 'table.dataTable tbody tr' },
+        { file: '14-mobile-accueil', as: 'agent', go: '/', viewport: MOBILE },
+        { file: '15-mobile-liste', as: 'agent', go: '/mails', viewport: MOBILE, wait: 'table.dataTable tbody tr' },
+        { file: '16-theme-sombre', as: 'agent', go: '/mails', theme: 'dark', wait: 'table.dataTable tbody tr' },
     ];
 }
 
@@ -61,7 +62,7 @@ export async function takeScreenshots({ seed = true } = {}) {
     try {
         for (const shot of plan(demo)) {
             const viewport = shot.viewport ?? DESKTOP;
-            const key = `${shot.as}|${viewport.width}|${shot.fieldMode ? 1 : 0}`;
+            const key = `${shot.as}|${viewport.width}|${shot.theme ?? 'light'}`;
             if (!contexts.has(key)) {
                 const context = await browser.newContext({
                     viewport,
@@ -71,8 +72,8 @@ export async function takeScreenshots({ seed = true } = {}) {
                     isMobile: viewport === MOBILE,
                     hasTouch: viewport === MOBILE,
                 });
-                // Field mode is a per-device preference stored by app.js.
-                await context.addInitScript((on) => { try { localStorage.setItem('lt.fieldMode', on ? '1' : '0'); } catch { /* ignore */ } }, !!shot.fieldMode);
+                // Light/dark is a per-device preference stored by lt-theme.js; density follows the pointer (touch: cozy).
+                await context.addInitScript((theme) => { try { localStorage.setItem('lt.theme', theme); } catch { /* ignore */ } }, shot.theme ?? 'light');
                 const page = await context.newPage();
                 page.on('pageerror', (e) => console.warn(`  ! JS error on ${shot.file}: ${e.message}`));
                 if (shot.as) {

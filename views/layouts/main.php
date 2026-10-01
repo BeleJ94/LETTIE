@@ -30,9 +30,10 @@ $isCurrent = static fn (string $path): bool => $path === '/'
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="<?= e($csrf->token()) ?>">
-    <meta name="theme-color" content="#1f5fd1">
     <title><?= e($this->section('title', __('app.name'))) ?> · <?= e(__('app.name')) ?></title>
-    <link rel="preload" href="<?= e($vendor) ?>/ibm-plex-sans-5.1.0/IBMPlexSans-Regular-Latin1.woff2" as="font" type="font/woff2" crossorigin>
+    <?php /* Theme and density first (before paint), read by the UI5 bundle: docs/FIORI_DESIGN.md §2-3, §6. */ ?>
+    <script src="<?= e($assets) ?>/js/lt-theme.js"></script>
+    <link rel="stylesheet" href="<?= e($vendor) ?>/ui5-webcomponents-2.27.2/ui5-fonts.css">
     <link rel="stylesheet" href="<?= e($vendor) ?>/datatables-2.1.8/dataTables.dataTables.min.css">
     <link rel="stylesheet" href="<?= e($vendor) ?>/sweetalert2-11.14.5/sweetalert2.min.css">
     <link rel="stylesheet" href="<?= e($assets) ?>/css/app.css">
@@ -54,9 +55,9 @@ $isCurrent = static fn (string $path): bool => $path === '/'
     <a class="lt-brand" href="<?= e($basePath) ?>/"><i data-lucide="mails"></i><span><?= e(__('app.name')) ?></span></a>
     <div class="lt-topbar__spacer"></div>
     <div class="lt-topbar__tools">
-        <button type="button" class="lt-btn lt-btn--ghost lt-btn--icon" data-lt-field-mode aria-pressed="false"
-                title="<?= e(__('js.field_mode.on')) ?>">
-            <i data-lucide="smartphone"></i><span class="lt-sr-only"><?= e(__('nav.field_mode')) ?></span>
+        <button type="button" class="lt-btn lt-btn--ghost lt-btn--icon" data-lt-theme-toggle aria-pressed="false"
+                title="<?= e(__('js.theme.dark')) ?>">
+            <i data-lucide="moon"></i><span class="lt-sr-only"><?= e(__('nav.dark_theme')) ?></span>
         </button>
         <form method="post" action="<?= e($basePath) ?>/locale" class="lt-inline-form">
             <?= $csrf->field() ?>
@@ -127,6 +128,7 @@ $isCurrent = static fn (string $path): bool => $path === '/'
 <script src="<?= e($assets) ?>/js/lt-tables.js"></script>
 <script src="<?= e($assets) ?>/js/lt-export.js"></script>
 <script src="<?= e($assets) ?>/js/app.js"></script>
+<script type="module" src="<?= e($vendor) ?>/ui5-webcomponents-2.27.2/ui5.js"></script>
 <?php /* Page scripts (Chart.js, ExcelJS, pdfmake…) go in the "scripts" section, as external files only. */ ?>
 <?= $this->section('scripts') ?>
 </body>

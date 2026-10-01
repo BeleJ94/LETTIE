@@ -23,7 +23,7 @@ async function main() {
     const toGuide = (p) => relative(GUIDE_DIR, join(ROOT, p)).split('\\').join('/');
     const html = readFileSync(join(ROOT, 'tools/guide/guide.html'), 'utf8')
         .replaceAll('{{date}}', date)
-        .replaceAll('{{fonts}}', toGuide('public/assets/vendor/ibm-plex-sans-5.1.0'))
+        .replaceAll('{{fonts}}', toGuide('public/assets/vendor/ui5-webcomponents-2.27.2/fonts'))
         .replaceAll('{{hero}}', toGuide('public/assets/img/login-hero.svg'));
     writeFileSync(HTML_OUT, html);
 

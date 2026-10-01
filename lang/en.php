@@ -25,7 +25,7 @@ return [
         'register' => 'Register',
         'mails' => 'Mail',
         'correspondents' => 'Correspondents',
-        'field_mode' => 'Field mode',
+        'dark_theme' => 'Dark theme',
     ],
     // Sent to the browser (data-i18n) and read by lt-core.js / lt-tables.js / app.js.
     'js' => [
@@ -40,9 +40,9 @@ return [
             'no' => 'Cancel',
             'input_required' => 'This field is required.',
         ],
-        'field_mode' => [
-            'on' => 'Turn on field mode',
-            'off' => 'Leave field mode',
+        'theme' => [
+            'dark' => 'Switch to the dark theme',
+            'light' => 'Switch to the light theme',
         ],
         'errors' => [
             'network' => 'Cannot reach the server. Check your connection.',

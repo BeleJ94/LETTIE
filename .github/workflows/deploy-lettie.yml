@@ -29,7 +29,7 @@ jobs:
             git reset --hard origin/main
 
             echo "=== Fixing permissions ==="
-            chown -R UTILISATEUR:psacln /var/www/vhosts/belej-erp.com/lettie.belej-erp.com
+            chown -R belej-erp.com_w1byz3rcb7a:psacln /var/www/vhosts/belej-erp.com/lettie.belej-erp.com
 
             echo "=== Current version ==="
             git log -1 --oneline

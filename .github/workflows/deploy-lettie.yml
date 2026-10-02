@@ -30,6 +30,10 @@ jobs:
 
             echo "=== Fixing permissions ==="
             chown -R belej-erp.com_w1byz3rcb7a:psacln /var/www/vhosts/belej-erp.com/lettie.belej-erp.com
+            # Plesk: Apache runs in the group psaserv. The site folder and its document root must
+            # belong to that group, or Apache cannot enter them (403, "unable to check htaccess file").
+            chown belej-erp.com_w1byz3rcb7a:psaserv /var/www/vhosts/belej-erp.com/lettie.belej-erp.com /var/www/vhosts/belej-erp.com/lettie.belej-erp.com/public
+            chmod 750 /var/www/vhosts/belej-erp.com/lettie.belej-erp.com /var/www/vhosts/belej-erp.com/lettie.belej-erp.com/public
 
             echo "=== Current version ==="
             git log -1 --oneline

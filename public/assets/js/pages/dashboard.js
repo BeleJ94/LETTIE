@@ -15,16 +15,33 @@
 })(typeof self !== 'undefined' ? self : this, function (core) {
     'use strict';
 
-    var DEFAULT_PALETTE = {
-        incoming: '#0b6e99',
-        outgoing: '#6e40c9',
-        primary: '#1f5fd1',
-        warning: '#9a6700',
-        danger: '#c9252d',
-        muted: '#9aa3b0',
-        grid: 'rgba(22, 27, 34, .08)',
-        text: '#5b6573'
+    /**
+     * Theme variable of each colour role (docs/FIORI_DESIGN.md §3): no colour is written here.
+     * Series use the ordered chart palette, states the semantic chart colours.
+     */
+    var VARIABLES = {
+        incoming: '--sapChart_OrderedColor_1',
+        outgoing: '--sapChart_OrderedColor_2',
+        primary: '--sapChart_OrderedColor_1',
+        warning: '--sapChart_Critical',
+        danger: '--sapChart_Bad',
+        severe: '--sapIndicationColor_1',
+        muted: '--sapChart_Neutral',
+        grid: '--sapList_BorderColor',
+        text: '--sapContent_LabelColor'
     };
+
+    /**
+     * @param {function(string): string} read returns the value of a CSS variable of the current theme
+     * @returns {Object<string, string>} colour role → value
+     */
+    function themePalette(read) {
+        var colours = {};
+        Object.keys(VARIABLES).forEach(function (role) {
+            colours[role] = String(read(VARIABLES[role]) || '').trim();
+        });
+        return colours;
+    }
 
     function tr(t) {
         return t || function (key) { return key; };
@@ -66,7 +83,7 @@
 
     /** Stacked bars: incoming / outgoing per period. */
     function volumeChart(data, t, palette, locale) {
-        var p = palette || DEFAULT_PALETTE;
+        var p = palette;
         var options = baseOptions(p);
         options.scales.x.stacked = true;
         options.scales.y.stacked = true;
@@ -85,7 +102,7 @@
 
     /** Horizontal grouped bars: volumes per department. */
     function departmentChart(data, t, palette) {
-        var p = palette || DEFAULT_PALETTE;
+        var p = palette;
         var rows = data.departments.slice(0, 12);
         var options = baseOptions(p, { indexAxis: 'y' });
         options.scales = {
@@ -108,7 +125,7 @@
 
     /** Average processing time (days) per department. */
     function processingChart(data, t, palette) {
-        var p = palette || DEFAULT_PALETTE;
+        var p = palette;
         var rows = data.processing.by_department.slice(0, 12);
         var options = baseOptions(p, { indexAxis: 'y' });
         options.plugins.legend = { display: false };
@@ -129,13 +146,13 @@
 
     /** Doughnut: overdue pending mail by age. */
     function overdueChart(data, t, palette) {
-        var p = palette || DEFAULT_PALETTE;
+        var p = palette;
         var keys = Object.keys(data.overdue.buckets);
         return {
             type: 'doughnut',
             data: {
                 labels: keys.map(function (k) { return tr(t)('js.stats.bucket', { range: k }); }),
-                datasets: [{ data: keys.map(function (k) { return data.overdue.buckets[k]; }), backgroundColor: [p.warning, '#d9822b', p.danger], borderWidth: 0 }]
+                datasets: [{ data: keys.map(function (k) { return data.overdue.buckets[k]; }), backgroundColor: [p.warning, p.danger, p.severe], borderWidth: 0 }]
             },
             options: {
                 responsive: true,
@@ -148,7 +165,7 @@
 
     /** Top correspondents (total, stacked by direction). */
     function correspondentsChart(data, t, palette) {
-        var p = palette || DEFAULT_PALETTE;
+        var p = palette;
         var rows = data.correspondents;
         var options = baseOptions(p, { indexAxis: 'y' });
         options.scales = {
@@ -216,19 +233,16 @@
         }
         var form = document.getElementById(root.getAttribute('data-filters'));
         var charts = {};
-        var styles = window.getComputedStyle(document.documentElement);
-        var cssVar = function (name, fallback) { return (styles.getPropertyValue(name) || '').trim() || fallback; };
-        var palette = {
-            incoming: cssVar('--lt-incoming', DEFAULT_PALETTE.incoming),
-            outgoing: cssVar('--lt-outgoing', DEFAULT_PALETTE.outgoing),
-            primary: cssVar('--lt-primary', DEFAULT_PALETTE.primary),
-            warning: cssVar('--lt-warning', DEFAULT_PALETTE.warning),
-            danger: cssVar('--lt-danger', DEFAULT_PALETTE.danger),
-            muted: cssVar('--lt-text-muted', DEFAULT_PALETTE.muted),
-            grid: cssVar('--lt-border', DEFAULT_PALETTE.grid),
-            text: cssVar('--lt-text-muted', DEFAULT_PALETTE.text)
-        };
-        window.Chart.defaults.font.family = cssVar('--lt-font', 'system-ui');
+        var palette = {};
+        var lastData = null;
+        // Colours and font are read from the theme each time the charts are drawn.
+        function readTheme() {
+            var styles = window.getComputedStyle(document.documentElement);
+            var read = function (name) { return styles.getPropertyValue(name); };
+            palette = themePalette(read);
+            window.Chart.defaults.font.family = String(read('--sapFontFamily') || '').trim();
+        }
+        readTheme();
         var builders = {
             volumes: volumeChart,
             departments: departmentChart,
@@ -249,6 +263,7 @@
         }
 
         function render(data) {
+            lastData = data;
             var kpiBox = root.querySelector('[data-lt-kpis]');
             kpiBox.innerHTML = kpis(data, LT.t, LT.config.locale).map(function (k) {
                 return '<div class="lt-stat lt-stat--' + k.key + '"><span class="lt-stat__value">' + LT.escapeHtml(k.value)
@@ -292,6 +307,15 @@
             });
         }
 
+        // The theme variables change shortly after the event (the theme is loaded on demand).
+        document.addEventListener('lt:theme-change', function () {
+            window.setTimeout(function () {
+                readTheme();
+                if (lastData) {
+                    render(lastData);
+                }
+            }, 400);
+        });
         $(form).on('change', ':input', LT.debounce(load, 300));
         $(form).on('submit', function (e) {
             e.preventDefault();
@@ -302,13 +326,21 @@
     }
 
     if (typeof window !== 'undefined' && typeof document !== 'undefined' && window.jQuery) {
+        // The colours are theme variables: wait until UI5 has applied the theme.
         window.jQuery(function () {
-            initDom(window, document, window.jQuery);
+            if (document.documentElement.classList.contains('lt-ui5-ready')) {
+                initDom(window, document, window.jQuery);
+            } else {
+                document.addEventListener('lt:ui5-ready', function () {
+                    initDom(window, document, window.jQuery);
+                }, { once: true });
+            }
         });
     }
 
     return {
-        DEFAULT_PALETTE: DEFAULT_PALETTE,
+        VARIABLES: VARIABLES,
+        themePalette: themePalette,
         periodLabel: periodLabel,
         volumeChart: volumeChart,
         departmentChart: departmentChart,

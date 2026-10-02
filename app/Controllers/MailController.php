@@ -8,6 +8,7 @@ use App\Controllers\Concerns\HandlesDomain;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
+use App\Core\BulkRequest;
 use App\Core\TableRequest;
 use App\Core\Translator;
 use App\Core\Url;
@@ -43,6 +44,7 @@ final class MailController
     private const ENUM_FIELDS = ['direction', 'channel', 'priority', 'confidentiality', 'status'];
     private const DATETIME_FIELDS = ['received_at', 'sent_at'];
     private const DATE_FIELDS = ['document_date', 'due_date'];
+    private const HISTORY_HIDDEN_FIELDS = ['assignment_id', 'annotation_id', 'attachment_id', 'sha256', 'size_bytes', 'mime_type', 'site_id'];
 
     /** @var array<int, string> user id => name, for the history */
     private array $userNames = [];
@@ -66,9 +68,14 @@ final class MailController
 
     public function index(Request $request): Response
     {
+        $user = $this->actor($request)->user;
+        $canAssign = $user->can(Permission::MailAssign);
         return Response::html($this->view->render('mails/index', [
             'departments' => $this->reference->departments(),
-            'canCreate' => $this->auth->user()?->can(Permission::MailCreate) ?? false,
+            'canCreate' => $user->can(Permission::MailCreate),
+            'canAssign' => $canAssign,
+            'canClose' => $user->can(Permission::MailUpdate),
+            'assignableUsers' => $canAssign ? $this->workflow->assignableUsers($user->siteId) : [],
         ]));
     }
 
@@ -128,18 +135,69 @@ final class MailController
             ? $this->translator->get('link.reply_created', ['reference' => $mail->reference, 'incoming' => $replyTo->reference])
             : $this->translator->get('mail.created', ['reference' => $mail->reference]);
         $this->session->flash('flash.success', $message);
+
+        // Optional scan chosen in the wizard. The mail is registered whatever happens to the file:
+        // a refused file is reported, and can be added again from the mail page.
+        $file = $request->file('file');
+        if ($file !== null && ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            try {
+                $this->attachments->upload($actor, $mail->id, $file);
+            } catch (RuleViolation $e) {
+                $this->session->flash('flash.error', $this->translator->get('wizard.mail.attachment_failed', [
+                    'reason' => implode(' ', array_merge(...array_values($this->violationMessages($e)))),
+                ]));
+            }
+        }
         return Response::redirect($this->url->route('mails.show', ['id' => $mail->id]));
     }
 
     public function show(Request $request): Response
     {
         $mail = $this->orNotFound(fn (): Mail => $this->mails->find($this->routeId($request)));
+        return $this->page($request, $mail, false);
+    }
+
+    /** The mail page in edit mode (Object Page: same screen, general section editable). */
+    public function edit(Request $request): Response
+    {
+        $mail = $this->orNotFound(fn (): Mail => $this->mails->find($this->routeId($request)));
+        if (!$mail->isEditable()) {
+            return Response::redirect($this->url->route('mails.show', ['id' => $mail->id]));
+        }
+        return $this->page($request, $mail, true, self::valuesOf($mail));
+    }
+
+    public function update(Request $request): Response
+    {
+        $mail = $this->orNotFound(fn (): Mail => $this->mails->find($this->routeId($request)));
+        try {
+            $input = $this->parseInput($request, $mail->direction);
+            $mail = $this->orNotFound(fn (): Mail => $this->mails->update($this->actor($request), $mail->id, $input));
+        } catch (ValidationException | RuleViolation $e) {
+            return $this->page($request, $mail, true, $request->all(), $this->errorsOf($e));
+        }
+        $this->session->flash('flash.success', $this->translator->get('mail.updated', ['reference' => $mail->reference]));
+        return Response::redirect($this->url->route('mails.show', ['id' => $mail->id]));
+    }
+
+    /**
+     * Object Page of a mail, in display or edit mode.
+     *
+     * @param array<string, mixed> $values edit mode: values of the general section
+     * @param array<string, list<string>> $errors edit mode: validation errors (HTTP 422)
+     */
+    private function page(Request $request, Mail $mail, bool $editing, array $values = [], array $errors = []): Response
+    {
         $actor = $this->actor($request);
         $user = $actor->user;
+        $correspondent = $this->correspondents->findOrNull($mail->correspondentId);
+        // In edit mode the picker shows the correspondent being chosen, not the saved one.
+        $chosenId = (int) ($values['correspondent_id'] ?? 0);
+        $chosen = $editing && $chosenId > 0 ? $this->correspondents->findOrNull($chosenId) : null;
 
         return Response::html($this->view->render('mails/show', [
             'mail' => $mail,
-            'correspondent' => $this->correspondents->findOrNull($mail->correspondentId),
+            'correspondent' => $correspondent,
             'departmentName' => $mail->departmentId !== null ? $this->reference->departmentName($mail->departmentId) : null,
             'attachments' => $this->attachments->forMail($mail->id),
             'history' => $this->history($mail),
@@ -158,29 +216,17 @@ final class MailController
             'canAnnotate' => $user->can(Permission::MailAnnotate),
             'canReply' => $user->can(Permission::MailCreate) && $mail->direction === Direction::Incoming && $mail->isEditable(),
             'canLinkReply' => $user->can(Permission::MailUpdate) && $mail->direction === Direction::Outgoing,
-        ]));
-    }
-
-    public function edit(Request $request): Response
-    {
-        $mail = $this->orNotFound(fn (): Mail => $this->mails->find($this->routeId($request)));
-        return $this->form($mail->direction, $mail, self::valuesOf($mail));
-    }
-
-    public function update(Request $request): Response
-    {
-        $mail = $this->orNotFound(fn (): Mail => $this->mails->find($this->routeId($request)));
-        try {
-            $input = $this->parseInput($request, $mail->direction);
-            $mail = $this->orNotFound(fn (): Mail => $this->mails->update($this->actor($request), $mail->id, $input));
-        } catch (ValidationException | RuleViolation $e) {
-            return $this->form($mail->direction, $mail, $request->all(), $this->errorsOf($e));
-        }
-        $this->session->flash('flash.success', $this->translator->get('mail.updated', ['reference' => $mail->reference]));
-        return Response::redirect($this->url->route('mails.show', ['id' => $mail->id]));
+            // Edit mode
+            'editing' => $editing,
+            'values' => $values,
+            'errors' => $errors,
+            'correspondentLabel' => $chosen?->displayName() ?? '',
+        ]), $errors === [] ? 200 : 422);
     }
 
     /**
+     * Creation form (Object Page in creation mode).
+     *
      * @param array<string, mixed> $values
      * @param array<string, list<string>> $errors
      */
@@ -189,7 +235,12 @@ final class MailController
         $correspondentId = (int) ($values['correspondent_id'] ?? 0);
         $correspondent = $correspondentId > 0 ? $this->correspondents->findOrNull($correspondentId) : null;
 
-        return Response::html($this->view->render('mails/form', [
+        // Incoming mail is registered step by step (Wizard); a reply or an outgoing mail is a simple form.
+        $view = $direction === Direction::Incoming && $replyTo === null ? 'mails/wizard' : 'mails/form';
+
+        return Response::html($this->view->render($view, [
+            'maxUploadMb' => (int) ceil($this->attachmentPolicy->maxBytes() / 1048576),
+            'accept' => implode(',', array_keys(AttachmentPolicy::ALLOWED)),
             'direction' => $direction,
             'mail' => $mail,
             'replyTo' => $replyTo,
@@ -259,6 +310,8 @@ final class MailController
             overdueBefore: $request->query('overdue') ? (new DateTimeImmutable('now', $zone))->format('Y-m-d') : null,
             // "My mail": assigned to me or to an absent colleague I replace.
             assignedToUserIds: $request->query('mine') ? $this->workflow->coveredUserIds($this->actor($request)) : null,
+            // Rows selected in the list ("1,2,3"): export of the selection.
+            ids: is_string($request->query('ids')) && $request->query('ids') !== '' ? BulkRequest::ids($request->query('ids')) : null,
         );
     }
 
@@ -317,7 +370,8 @@ final class MailController
         foreach ($this->mails->history($mail->id) as $row) {
             $changes = [];
             foreach (array_unique([...array_keys($row['old_values']), ...array_keys($row['new_values'])]) as $field) {
-                if ($field === 'assignment_id' || $field === 'annotation_id') {
+                // Technical values (ids, checksum, raw size) stay in the audit log; the page shows what a reader needs.
+                if (in_array($field, self::HISTORY_HIDDEN_FIELDS, true)) {
                     continue;
                 }
                 $changes[] = [

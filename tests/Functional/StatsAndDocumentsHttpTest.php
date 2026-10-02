@@ -139,7 +139,7 @@ final class StatsAndDocumentsHttpTest extends TestCase
         $this->createMail('incoming', 'Second');
         $this->createMail('outgoing', 'Sortant');
 
-        self::assertStringContainsString('data-set="register_{direction}"', $this->get($this->agent, '/register')->body());
+        self::assertStringContainsString('data-export-set="register_{direction}"', $this->get($this->agent, '/register')->body());
         $register = $this->json($this->agent, '/register/data', ['direction' => 'incoming', 'from' => date('Y-m-d', strtotime('-10 days')), 'to' => date('Y-m-d')]);
         self::assertSame(['Premier', 'Second'], array_column($register['data'], 'subject'));
         self::assertNotNull($register['data'][0]['received_at']);

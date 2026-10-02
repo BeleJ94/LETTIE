@@ -10,6 +10,7 @@ use App\Domain\AccessDeniedException;
 use App\Domain\Annotation\Annotation;
 use App\Domain\Assignment\Assignment;
 use App\Domain\Assignment\AssignmentRequest;
+use App\Domain\Assignment\AssignmentRole;
 use App\Domain\Assignment\AssignmentRules;
 use App\Domain\Assignment\AssignmentStatus;
 use App\Domain\Audit\Actor;
@@ -119,6 +120,59 @@ final class WorkflowService
             $this->changeStatus($actor, $mail, MailWorkflow::apply($mail->status, $action), $comment);
             return $this->mails->findById($mail->id) ?? throw NotFoundException::of('Mail', $mail->id);
         });
+    }
+
+    /* ---------------------------------------------------- bulk actions (list) */
+
+    /**
+     * Assigns several mails at once (list toolbar). Each mail is processed in its own
+     * transaction: a refusal on one mail never undoes the others. "For action" on a mail
+     * that already has an owner is a reassignment, as on the mail page.
+     *
+     * @param list<int> $mailIds
+     * @return array{done: list<int>, failed: array<int, NotFoundException|AccessDeniedException|RuleViolation>}
+     */
+    public function assignMany(Actor $actor, array $mailIds, AssignmentRequest $request, ?string $comment = null): array
+    {
+        return $this->each($mailIds, function (int $mailId) use ($actor, $request, $comment): void {
+            if ($request->role === AssignmentRole::ForAction && $this->assignments->activeForAction($mailId) !== null) {
+                $this->reassign($actor, $mailId, $request, $comment);
+            } else {
+                $this->assign($actor, $mailId, $request);
+            }
+        });
+    }
+
+    /**
+     * Performs one workflow action on several mails (list toolbar: close), one transaction per mail.
+     *
+     * @param list<int> $mailIds
+     * @return array{done: list<int>, failed: array<int, NotFoundException|AccessDeniedException|RuleViolation>}
+     */
+    public function performMany(Actor $actor, array $mailIds, MailAction $action, ?string $comment = null): array
+    {
+        return $this->each($mailIds, function (int $mailId) use ($actor, $action, $comment): void {
+            $this->perform($actor, $mailId, $action, $comment);
+        });
+    }
+
+    /**
+     * @param list<int> $mailIds
+     * @param \Closure(int): void $work
+     * @return array{done: list<int>, failed: array<int, NotFoundException|AccessDeniedException|RuleViolation>}
+     */
+    private function each(array $mailIds, \Closure $work): array
+    {
+        $result = ['done' => [], 'failed' => []];
+        foreach (array_values(array_unique($mailIds)) as $mailId) {
+            try {
+                $work($mailId);
+                $result['done'][] = $mailId;
+            } catch (NotFoundException | AccessDeniedException | RuleViolation $e) {
+                $result['failed'][$mailId] = $e;
+            }
+        }
+        return $result;
     }
 
     /* ------------------------------------------------------------ annotation */

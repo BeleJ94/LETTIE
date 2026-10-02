@@ -347,34 +347,53 @@
      * @param {{message: string, title?: string, button?: string, danger?: boolean,
      *          input?: string, inputLabel?: string, inputRequired?: boolean}} attrs
      */
-    function confirmOptions(attrs, t) {
+    /**
+     * Description of a dialog (rendered as a ui5-dialog by app.js), from either a simple
+     * request {message, kind: 'info'|'warning'|'error', details} (acknowledge) or
+     * {message, confirm: true, attrs} (question; attrs from confirmAttributes()).
+     * Fiori rules: semantic state, action first then Cancel, initial focus on Cancel
+     * when the action cannot be undone.
+     */
+    function dialogSpec(request, t) {
         var translate = t || function (key) { return key; };
-        var a = attrs || {};
-        var options = {
-            icon: a.danger ? 'warning' : 'question',
-            title: a.title || translate('js.confirm.title'),
-            text: a.message || '',
-            showCancelButton: true,
-            confirmButtonText: a.button || translate('js.confirm.yes'),
-            cancelButtonText: translate('js.confirm.no'),
-            reverseButtons: true,
-            focusCancel: !!a.danger,
-            customClass: { confirmButton: a.danger ? 'lt-swal-danger' : '' }
-        };
-        if (a.input) {
-            options.input = 'textarea';
-            options.inputLabel = a.inputLabel || '';
-            options.inputAttributes = { maxlength: '1000', 'aria-label': a.inputLabel || a.input };
-            if (a.inputRequired) {
-                options.inputValidator = function (value) {
-                    return String(value || '').trim() === '' ? translate('js.confirm.input_required') : undefined;
-                };
-            }
+        var r = request || {};
+        var a = r.attrs || {};
+        if (!r.confirm) {
+            var states = { info: 'Information', warning: 'Critical', error: 'Negative' };
+            var titles = { info: 'js.dialog.info', warning: 'js.dialog.warning', error: 'js.dialog.error' };
+            var kind = states[r.kind] ? r.kind : 'info';
+            return {
+                title: translate(titles[kind]),
+                message: r.message || '',
+                details: r.details || [],
+                state: states[kind],
+                confirmText: translate('js.ok'),
+                confirmDesign: 'Emphasized',
+                cancelText: null,
+                initialFocus: 'confirm',
+                input: null
+            };
         }
-        return options;
+        return {
+            title: a.title || translate('js.confirm.title'),
+            message: r.message || a.message || '',
+            details: [],
+            state: a.danger ? 'Negative' : 'Critical',
+            confirmText: a.button || translate('js.confirm.yes'),
+            confirmDesign: a.danger ? 'Negative' : 'Emphasized',
+            cancelText: translate('js.confirm.no'),
+            initialFocus: a.danger ? 'cancel' : 'confirm',
+            input: a.input ? {
+                name: a.input,
+                label: a.inputLabel || '',
+                required: !!a.inputRequired,
+                requiredMessage: translate('js.confirm.input_required'),
+                maxlength: 1000
+            } : null
+        };
     }
 
-    /** Reads confirmOptions() attributes from an element's dataset (DOMStringMap or plain object). */
+    /** Reads the data-lt-confirm-* attributes (see dialogSpec) from an element's dataset (DOMStringMap or plain object). */
     function confirmAttributes(dataset) {
         var d = dataset || {};
         var flag = function (v) { return v !== undefined && v !== null && v !== 'false'; };
@@ -455,7 +474,7 @@
         ApiError: ApiError,
         normalizeError: normalizeError,
         createApi: createApi,
-        confirmOptions: confirmOptions,
+        dialogSpec: dialogSpec,
         confirmAttributes: confirmAttributes,
         badgeText: badgeText,
         debounce: debounce,

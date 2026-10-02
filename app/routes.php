@@ -8,6 +8,7 @@ use App\Controllers\CorrespondentController;
 use App\Controllers\DashboardController;
 use App\Controllers\DelegationController;
 use App\Controllers\NotificationController;
+use App\Controllers\OverviewController;
 use App\Controllers\RegisterController;
 use App\Controllers\RetentionController;
 use App\Controllers\StatisticsController;
@@ -27,6 +28,7 @@ return static function (Router $router): void {
     $router->group(['auth'], static function (Router $router): void {
         $router->post('/logout', [AuthController::class, 'logout'], 'logout');
         $router->get('/', [DashboardController::class, 'index'], 'home', ['can:mail.view']);
+        $router->get('/navigation/counts', [DashboardController::class, 'counts'], 'navigation.counts', ['can:mail.view']);
 
         // Notifications (each user sees their own)
         $router->get('/notifications', [NotificationController::class, 'index'], 'notifications.index');
@@ -36,6 +38,7 @@ return static function (Router $router): void {
 
         // Statistics
         $router->group(['can:reports.view'], static function (Router $router): void {
+            $router->get('/overview', [OverviewController::class, 'index'], 'overview.index');
             $router->get('/statistics', [StatisticsController::class, 'index'], 'statistics.index');
             $router->get('/statistics/data', [StatisticsController::class, 'data'], 'statistics.data');
         });
@@ -70,6 +73,8 @@ return static function (Router $router): void {
         });
 
         // Workflow (finer checks — assignee, status — are made by WorkflowService)
+        $router->post('/mails/bulk/assign', [WorkflowController::class, 'bulkAssign'], 'workflow.bulk_assign', ['can:mail.assign']);
+        $router->post('/mails/bulk/close', [WorkflowController::class, 'bulkClose'], 'workflow.bulk_close', ['can:mail.update']);
         $router->post('/mails/{id:\d+}/assign', [WorkflowController::class, 'assign'], 'workflow.assign', ['can:mail.assign']);
         $router->post('/mails/{id:\d+}/reassign', [WorkflowController::class, 'reassign'], 'workflow.reassign', ['can:mail.assign']);
         $router->post('/mails/{id:\d+}/actions/{action:[a-z_]+}', [WorkflowController::class, 'action'], 'workflow.action', ['can:mail.update']);

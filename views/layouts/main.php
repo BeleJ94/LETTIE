@@ -1,5 +1,7 @@
 <?php
 /**
+ * Application shell (docs/FIORI_DESIGN.md §2 and §11): ShellBar, side navigation, profile menu.
+ *
  * @var App\Core\View $this
  * @var App\Core\Csrf $csrf
  * @var ?App\Domain\Auth\User $currentUser
@@ -8,125 +10,174 @@
  * @var string $timezone
  * @var array<string, mixed> $i18n
  */
+use App\Domain\Auth\Permission;
+
 $assets = $basePath . '/assets';
 $vendor = $assets . '/vendor';
-$navItems = [
-    ['path' => '/', 'icon' => 'layout-dashboard', 'label' => 'nav.dashboard', 'permission' => App\Domain\Auth\Permission::MailView],
-    ['path' => '/mails', 'icon' => 'mail', 'label' => 'nav.mails', 'permission' => App\Domain\Auth\Permission::MailView],
-    ['path' => '/register', 'icon' => 'book-open', 'label' => 'nav.register', 'permission' => App\Domain\Auth\Permission::MailView],
-    ['path' => '/statistics', 'icon' => 'chart-column', 'label' => 'nav.statistics', 'permission' => App\Domain\Auth\Permission::ReportsView],
-    ['path' => '/delegations', 'icon' => 'calendar-off', 'label' => 'nav.delegations', 'permission' => App\Domain\Auth\Permission::MailView],
-    ['path' => '/notifications', 'icon' => 'bell', 'label' => 'nav.notifications', 'permission' => App\Domain\Auth\Permission::MailView],
-    ['path' => '/retention-rules', 'icon' => 'archive', 'label' => 'nav.retention', 'permission' => App\Domain\Auth\Permission::SettingsManage],
-    ['path' => '/correspondents','icon' => 'contact', 'label' => 'nav.correspondents', 'permission' => App\Domain\Auth\Permission::CorrespondentsManage],
+$locale ??= 'fr';
+// Side navigation (docs/FIORI_DESIGN.md §11): daily work first, steering in a group, personal
+// and administration settings pinned at the bottom. Every entry is filtered by permission.
+$navMain = [
+    ['path' => '/', 'icon' => 'home', 'label' => 'nav.dashboard', 'permission' => Permission::MailView],
+    ['path' => '/mails/new', 'icon' => 'add', 'label' => 'nav.new_mail', 'permission' => Permission::MailCreate, 'action' => true],
+    ['path' => '/mails', 'icon' => 'email', 'label' => 'nav.mails', 'permission' => Permission::MailView, 'children' => [
+        ['query' => '', 'label' => 'nav.all_mails', 'permission' => Permission::MailView],
+        ['query' => 'mine=1', 'label' => 'nav.my_mails', 'permission' => Permission::MailUpdate],
+        ['query' => 'mine=1&overdue=1', 'label' => 'nav.my_overdue', 'permission' => Permission::MailUpdate, 'count' => 'mine_overdue'],
+        ['query' => 'direction=incoming&status=registered', 'label' => 'nav.to_assign', 'permission' => Permission::MailAssign, 'count' => 'unassigned'],
+    ]],
+    ['path' => '/register', 'icon' => 'course-book', 'label' => 'nav.register', 'permission' => Permission::MailView],
+    ['path' => '/correspondents', 'icon' => 'business-card', 'label' => 'nav.correspondents', 'permission' => Permission::CorrespondentsManage],
 ];
-$isCurrent = static fn (string $path): bool => $path === '/'
-    ? $currentPath === '/'
-    : ($currentPath === $path || str_starts_with($currentPath, $path . '/'));
+$navSteering = [
+    ['path' => '/overview', 'icon' => 'activities', 'label' => 'nav.overview', 'permission' => Permission::ReportsView],
+    ['path' => '/statistics', 'icon' => 'bar-chart', 'label' => 'nav.statistics', 'permission' => Permission::ReportsView],
+];
+$navFixed = [
+    ['path' => '/delegations', 'icon' => 'away', 'label' => 'nav.delegations', 'permission' => Permission::MailView],
+    ['path' => '/retention-rules', 'icon' => 'history', 'label' => 'nav.retention', 'permission' => Permission::SettingsManage],
+];
+$allowed = static fn (array $items): array => $currentUser === null ? [] : array_values(array_filter(
+    $items,
+    static fn (array $item): bool => $currentUser->can($item['permission']),
+));
+// "/mails/new" is its own entry: it does not select "Courrier".
+$isCurrent = static fn (string $path): bool => match (true) {
+    $path === '/' => $currentPath === '/',
+    $path === '/mails' => $currentPath === '/mails' || (str_starts_with($currentPath, '/mails/') && $currentPath !== '/mails/new'),
+    default => $currentPath === $path || str_starts_with($currentPath, $path . '/'),
+};
+$navItem = static function (array $item, string $slot = '') use ($basePath, $isCurrent): string {
+    // An entry with shortcuts only opens and closes them: it has no address of its own (its first shortcut is the whole list).
+    $parent = isset($item['children']);
+    return '<ui5-side-navigation-item text="' . e(__($item['label'])) . '" icon="' . e($item['icon']) . '"'
+        . ($parent ? ' unselectable' : ' href="' . e($basePath . $item['path']) . '"')
+        . ($slot !== '' ? ' slot="' . e($slot) . '"' : '')
+        . ($parent ? ' expanded' : '')
+        . (!empty($item['action']) ? ' design="Action"' : (!$parent && $isCurrent($item['path']) ? ' selected' : ''))
+        . '>';
+};
+$initials = $currentUser === null ? '' : mb_strtoupper(mb_substr($currentUser->firstName, 0, 1) . mb_substr($currentUser->lastName, 0, 1));
+$otherLocale = $locale === 'fr' ? 'en' : 'fr';
 ?>
 <!doctype html>
-<html lang="<?= e($locale ?? 'fr') ?>">
+<html lang="<?= e($locale) ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="<?= e($csrf->token()) ?>">
     <title><?= e($this->section('title', __('app.name'))) ?> · <?= e(__('app.name')) ?></title>
+    <link rel="icon" type="image/svg+xml" href="<?= e($assets) ?>/img/logo.svg">
     <?php /* Theme and density first (before paint), read by the UI5 bundle: docs/FIORI_DESIGN.md §2-3, §6. */ ?>
     <script src="<?= e($assets) ?>/js/lt-theme.js"></script>
     <link rel="stylesheet" href="<?= e($vendor) ?>/ui5-webcomponents-2.27.2/ui5-fonts.css">
-    <link rel="stylesheet" href="<?= e($vendor) ?>/datatables-2.1.8/dataTables.dataTables.min.css">
-    <link rel="stylesheet" href="<?= e($vendor) ?>/sweetalert2-11.14.5/sweetalert2.min.css">
+    <?php /* Page styles (a vendored library still used by one screen), as external files only. */ ?>
+    <?= $this->section('styles') ?>
     <link rel="stylesheet" href="<?= e($assets) ?>/css/app.css">
 </head>
 <body class="<?= $currentUser === null ? 'lt-guest' : 'lt-authenticated' ?>"
       data-base-path="<?= e($basePath) ?>"
-      data-locale="<?= e($locale ?? 'fr') ?>"
+      data-locale="<?= e($locale) ?>"
       data-timezone="<?= e($timezone) ?>"
       data-i18n="<?= e(json_encode($i18n, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)) ?>">
 <a class="lt-skip" href="#main"><?= e(__('nav.skip')) ?></a>
 
-<header class="lt-topbar">
-    <?php if ($currentUser !== null): ?>
-        <button type="button" class="lt-btn lt-btn--ghost lt-btn--icon lt-nav-toggle" data-lt-toggle="nav"
-                aria-controls="lt-sidebar" aria-expanded="false" title="<?= e(__('nav.menu')) ?>">
-            <i data-lucide="menu"></i><span class="lt-sr-only"><?= e(__('nav.menu')) ?></span>
-        </button>
-    <?php endif; ?>
-    <a class="lt-brand" href="<?= e($basePath) ?>/"><i data-lucide="mails"></i><span><?= e(__('app.name')) ?></span></a>
-    <div class="lt-topbar__spacer"></div>
-    <div class="lt-topbar__tools">
-        <button type="button" class="lt-btn lt-btn--ghost lt-btn--icon" data-lt-theme-toggle aria-pressed="false"
-                title="<?= e(__('js.theme.dark')) ?>">
-            <i data-lucide="moon"></i><span class="lt-sr-only"><?= e(__('nav.dark_theme')) ?></span>
-        </button>
-        <form method="post" action="<?= e($basePath) ?>/locale" class="lt-inline-form">
-            <?= $csrf->field() ?>
-            <label for="lt-locale"><?= e(__('locale.label')) ?></label>
-            <select name="locale" id="lt-locale">
-                <?php foreach (['fr', 'en'] as $code): ?>
-                    <option value="<?= e($code) ?>"<?= $code === $locale ? ' selected' : '' ?>><?= e(__('locale.' . $code)) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <button type="submit" class="lt-btn lt-btn--icon" title="<?= e(__('locale.switch')) ?>">
-                <i data-lucide="languages"></i><span class="lt-sr-only"><?= e(__('locale.switch')) ?></span>
-            </button>
-        </form>
+<ui5-navigation-layout id="lt-layout" class="lt-shell" mode="Auto">
+    <ui5-shellbar slot="header" id="lt-shellbar" accessible-name="<?= e(__('app.name')) ?>"
         <?php if ($currentUser !== null): ?>
-            <a class="lt-btn lt-btn--ghost lt-btn--icon lt-bell" href="<?= e($basePath) ?>/notifications"
-               title="<?= e(__('notification.title')) ?>" data-lt-notifications data-url="/notifications/count">
-                <i data-lucide="bell"></i><span class="lt-sr-only"><?= e(__('notification.title')) ?></span>
-                <span class="lt-bell__count" data-lt-notifications-count hidden></span>
-            </a>
-            <div class="lt-user">
-                <span class="lt-user__name"><?= e($currentUser->fullName()) ?></span>
-                <span class="lt-user__role"><?= e(__($currentUser->role->labelKey())) ?></span>
-            </div>
-            <form method="post" action="<?= e($basePath) ?>/logout" class="lt-inline-form">
-                <?= $csrf->field() ?>
-                <button type="submit" class="lt-btn lt-btn--ghost lt-btn--icon" title="<?= e(__('auth.logout')) ?>">
-                    <i data-lucide="log-out"></i><span class="lt-sr-only"><?= e(__('auth.logout')) ?></span>
-                </button>
-            </form>
+            show-notifications data-lt-notifications data-url="/notifications/count" data-href="/notifications"
+        <?php endif; ?>>
+        <?php if ($currentUser !== null): ?>
+            <ui5-button slot="startButton" icon="menu2" design="Transparent" data-lt-toggle="nav"
+                        accessible-name="<?= e(__('nav.menu')) ?>" tooltip="<?= e(__('nav.menu')) ?>"></ui5-button>
         <?php endif; ?>
-    </div>
-</header>
-<div class="lt-offline-banner" role="status"><?= e(__('js.offline')) ?></div>
+        <ui5-shellbar-branding slot="branding" href="<?= e($basePath) ?>/" accessible-name="<?= e(__('app.name')) ?>">
+            <?= e(__('app.name')) ?>
+            <img slot="logo" src="<?= e($assets) ?>/img/logo.svg" alt="">
+        </ui5-shellbar-branding>
+        <?php if ($currentUser !== null && $currentUser->can(Permission::MailView)): ?>
+            <ui5-shellbar-search slot="searchField" show-clear-icon data-lt-search data-url="/mails"
+                                 placeholder="<?= e(__('launchpad.search')) ?>"
+                                 accessible-name="<?= e(__('launchpad.search')) ?>"></ui5-shellbar-search>
+        <?php endif; ?>
+        <?php if ($currentUser === null): ?>
+            <?php /* Guests have no profile menu: theme and language are direct ShellBar actions. */ ?>
+            <ui5-shellbar-item icon="dark-mode" text="<?= e(__('nav.dark_theme')) ?>" data-lt-theme-toggle></ui5-shellbar-item>
+            <ui5-shellbar-item icon="globe" text="<?= e(__('locale.' . $otherLocale)) ?>" data-lt-locale="<?= e($otherLocale) ?>"></ui5-shellbar-item>
+        <?php else: ?>
+            <ui5-avatar slot="profile" id="lt-profile" initials="<?= e($initials) ?>" color-scheme="Accent6"
+                        accessible-name="<?= e(__('launchpad.profile', ['name' => $currentUser->fullName()])) ?>"></ui5-avatar>
+        <?php endif; ?>
+    </ui5-shellbar>
 
-<div class="lt-shell">
     <?php if ($currentUser !== null): ?>
-        <nav id="lt-sidebar" class="lt-sidebar" aria-label="<?= e(__('nav.main')) ?>">
-            <ul class="lt-nav">
-                <?php foreach ($navItems as $item): ?>
-                    <?php if ($currentUser->can($item['permission'])): ?>
-                        <li>
-                            <a href="<?= e($basePath . $item['path']) ?>"<?= $isCurrent($item['path']) ? ' aria-current="page"' : '' ?>>
-                                <i data-lucide="<?= e($item['icon']) ?>"></i><span><?= e(__($item['label'])) ?></span>
-                            </a>
-                        </li>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            </ul>
-        </nav>
-        <div class="lt-backdrop"></div>
+        <?php /* Counters and the selected shortcut are set by app.js (data-lt-nav-counts, data-lt-nav-query). */ ?>
+        <ui5-side-navigation slot="sideContent" id="lt-sidenav" accessible-name="<?= e(__('nav.main')) ?>"
+                             data-lt-nav-counts data-url="/navigation/counts">
+            <?php foreach ($allowed($navMain) as $item): ?>
+                <?= $navItem($item) ?>
+                    <?php foreach ($allowed($item['children'] ?? []) as $child): ?>
+                        <ui5-side-navigation-sub-item text="<?= e(__($child['label'])) ?>"
+                            href="<?= e($basePath . $item['path'] . ($child['query'] !== '' ? '?' . $child['query'] : '')) ?>" data-lt-nav-query="<?= e($child['query']) ?>"<?= $child['query'] === '' && $isCurrent($item['path']) ? ' selected' : '' ?>
+                            data-label="<?= e(__($child['label'])) ?>"<?= isset($child['count']) ? ' data-count="' . e($child['count']) . '"' : '' ?>></ui5-side-navigation-sub-item>
+                    <?php endforeach; ?>
+                </ui5-side-navigation-item>
+            <?php endforeach; ?>
+            <?php if ($allowed($navSteering) !== []): ?>
+                <ui5-side-navigation-group text="<?= e(__('launchpad.nav_groups.steering')) ?>" expanded>
+                    <?php foreach ($allowed($navSteering) as $item): ?>
+                        <?= $navItem($item) ?></ui5-side-navigation-item>
+                    <?php endforeach; ?>
+                </ui5-side-navigation-group>
+            <?php endif; ?>
+            <?php foreach ($allowed($navFixed) as $item): ?>
+                <?= $navItem($item, 'fixedItems') ?></ui5-side-navigation-item>
+            <?php endforeach; ?>
+        </ui5-side-navigation>
     <?php endif; ?>
 
     <main id="main" class="lt-main <?= e(trim($this->section('main_class'))) ?>" tabindex="-1">
-        <?php foreach (['success', 'error'] as $type): ?>
+        <ui5-message-strip class="lt-offline-banner" design="Critical" hide-close-button role="status"><?= e(__('js.offline')) ?></ui5-message-strip>
+        <?php foreach (['success' => 'Positive', 'error' => 'Negative'] as $type => $design): ?>
             <?php if (!empty($flash[$type])): ?>
-                <div class="lt-alert lt-alert--<?= e($type) ?>" role="<?= $type === 'error' ? 'alert' : 'status' ?>"><?= e($flash[$type]) ?></div>
+                <ui5-message-strip class="lt-flash lt-flash--<?= e($type) ?>" design="<?= e($design) ?>"
+                                   role="<?= $type === 'error' ? 'alert' : 'status' ?>"><?= e($flash[$type]) ?></ui5-message-strip>
             <?php endif; ?>
         <?php endforeach; ?>
         <?= $this->section('content') ?>
     </main>
-</div>
+</ui5-navigation-layout>
+
+<?php if ($currentUser !== null): ?>
+    <ui5-user-menu id="lt-user-menu" opener="lt-profile">
+        <ui5-user-menu-account slot="accounts" selected
+            title-text="<?= e($currentUser->fullName()) ?>"
+            subtitle-text="<?= e(__($currentUser->role->labelKey())) ?>"
+            description="<?= e($currentUser->email) ?>"
+            avatar-initials="<?= e($initials) ?>" avatar-color-scheme="Accent6"></ui5-user-menu-account>
+        <ui5-user-menu-item icon="dark-mode" text="<?= e(__('nav.dark_theme')) ?>" data-lt-theme-toggle></ui5-user-menu-item>
+        <ui5-user-menu-item icon="globe" text="<?= e(__('locale.label')) ?>">
+            <?php foreach (['fr', 'en'] as $code): ?>
+                <ui5-user-menu-item text="<?= e(__('locale.' . $code)) ?>" data-lt-locale="<?= e($code) ?>"
+                    <?= $code === $locale ? ' icon="accept"' : '' ?>></ui5-user-menu-item>
+            <?php endforeach; ?>
+        </ui5-user-menu-item>
+    </ui5-user-menu>
+    <form method="post" action="<?= e($basePath) ?>/logout" id="lt-logout-form" hidden>
+        <?= $csrf->field() ?>
+    </form>
+<?php endif; ?>
+<form method="post" action="<?= e($basePath) ?>/locale" id="lt-locale-form" hidden>
+    <?= $csrf->field() ?>
+    <input type="hidden" name="locale" value="<?= e($locale) ?>">
+</form>
 
 <script src="<?= e($vendor) ?>/jquery-3.7.1/jquery.min.js"></script>
-<script src="<?= e($vendor) ?>/datatables-2.1.8/dataTables.min.js"></script>
-<script src="<?= e($vendor) ?>/sweetalert2-11.14.5/sweetalert2.min.js"></script>
 <script src="<?= e($vendor) ?>/lucide-0.460.0/lucide.min.js"></script>
 <script src="<?= e($assets) ?>/js/lt-core.js"></script>
-<script src="<?= e($assets) ?>/js/lt-tables.js"></script>
 <script src="<?= e($assets) ?>/js/lt-export.js"></script>
+<?php /* Libraries a page needs before app.js wires the page (DataTables on the screens not migrated yet). */ ?>
+<?= $this->section('libraries') ?>
 <script src="<?= e($assets) ?>/js/app.js"></script>
 <script type="module" src="<?= e($vendor) ?>/ui5-webcomponents-2.27.2/ui5.js"></script>
 <?php /* Page scripts (Chart.js, ExcelJS, pdfmake…) go in the "scripts" section, as external files only. */ ?>

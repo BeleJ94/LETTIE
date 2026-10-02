@@ -80,7 +80,7 @@ code { font-family: "72", monospace; background: #f1f3f6; padding: 0 1mm; border
     <ol>
         <li>Présentation et rôles</li>
         <li>Se connecter</li>
-        <li>Le tableau de bord</li>
+        <li>La page d'accueil</li>
         <li>Enregistrer un courrier</li>
         <li>Pièces jointes et bordereau</li>
         <li>Retrouver un courrier</li>
@@ -123,31 +123,38 @@ code { font-family: "72", monospace; background: #f1f3f6; padding: 0 1mm; border
 <div class="warning"><strong>Compte bloqué temporairement</strong>Après 5 erreurs de mot de passe, la connexion est bloquée pendant 15 minutes. Le message indique le temps restant. Si vous avez oublié votre mot de passe, adressez-vous à votre administrateur.</div>
 <p>En haut de l'écran, vous pouvez choisir la <strong>langue</strong> (français ou anglais) et vous <strong>déconnecter</strong> avec l'icône <span class="ui">⎋</span>. Pensez à vous déconnecter sur un poste partagé.</p>
 
-<h2><span class="section-number">3</span>Le tableau de bord</h2>
-<figure><img src="screenshots/02-tableau-de-bord.png" alt="Tableau de bord"><figcaption>Le tableau de bord du secrétariat : ses échéances et celles de tout le service.</figcaption></figure>
-<p>Dès la connexion, le tableau de bord résume les <strong>échéances</strong> :</p>
+<h2><span class="section-number">3</span>La page d'accueil</h2>
+<figure><img src="screenshots/02-tableau-de-bord.png" alt="Page d'accueil"><figcaption>L'accueil du secrétariat : ce qui est à traiter d'abord, puis les accès par thème.</figcaption></figure>
+<p>Dès la connexion, l'accueil présente des <strong>tuiles</strong> regroupées par thème. Chaque tuile affiche un chiffre à jour et ouvre l'écran correspondant, déjà filtré.</p>
 <ul>
-    <li><strong>En retard</strong> : courriers dont l'échéance est dépassée et qui ne sont ni répondus ni clos ;</li>
-    <li><strong>Aujourd'hui</strong> et <strong>7 prochains jours</strong> : ce qui arrive à échéance.</li>
+    <li><strong>À traiter</strong> : ce qui demande une action, le plus urgent en premier (courriers en retard, courriers à affecter, échéances du jour, notifications non lues). Une tuile porte l'étiquette « À traiter » tant que son compteur n'est pas à zéro ;</li>
+    <li><strong>Courrier</strong> : enregistrer un courrier, la liste, le registre, les correspondants ;</li>
+    <li><strong>Pilotage</strong> : délai moyen de traitement et clôtures en retard sur 30 jours (chefs de service, direction) ;</li>
+    <li><strong>Mon espace</strong> et <strong>Administration</strong> : absences, règles de conservation.</li>
 </ul>
-<p>« Mes échéances » compte les courriers qui vous sont affectés (et ceux d'un collègue absent que vous remplacez). Le secrétariat, les chefs de service et la direction voient aussi le total de leur périmètre. La liste « Prochaines échéances » permet d'ouvrir chaque courrier d'un clic.</p>
+<p>Vous ne voyez que les tuiles de votre rôle. « Mes courriers » compte ceux qui vous sont affectés (et ceux d'un collègue absent que vous remplacez). La liste « Prochaines échéances », sous les tuiles, ouvre chaque courrier d'un clic.</p>
+<p>Le <strong>menu de gauche</strong> reste disponible sur tous les écrans. Sous <span class="ui">Courrier</span>, les raccourcis <span class="ui">Mes courriers</span>, <span class="ui">Mes retards</span> et <span class="ui">À affecter</span> ouvrent la liste déjà filtrée ; un nombre entre parenthèses indique ce qui attend. <span class="ui">Enregistrer un courrier</span> y est toujours à portée. Le bouton en haut à gauche replie le menu pour laisser plus de place aux tableaux : votre choix est conservé sur cet appareil. Les notifications s'ouvrent par la cloche, en haut à droite.</p>
+<p>La barre du haut est présente sur tous les écrans : le bouton <span class="ui">☰</span> replie le menu, la loupe recherche un courrier par objet, référence ou correspondant, la cloche ouvre les notifications, et vos initiales ouvrent le menu du profil (thème, langue, déconnexion).</p>
 
 <h2><span class="section-number">4</span>Enregistrer un courrier</h2>
 <p>Depuis <span class="ui">Courrier</span>, cliquez sur <span class="ui">Nouveau courrier entrant</span> ou <span class="ui">Nouveau courrier sortant</span>.</p>
-<figure><img src="screenshots/04-nouveau-courrier.png" alt="Formulaire d'enregistrement"><figcaption>Le formulaire d'enregistrement : la recherche du correspondant propose les fiches existantes dès 2 lettres.</figcaption></figure>
+<figure><img src="screenshots/04-nouveau-courrier.png" alt="Formulaire d'enregistrement"><figcaption>L'enregistrement d'un courrier entrant, étape 2 : la recherche propose les correspondants existants dès 2 lettres.</figcaption></figure>
+<p>Un <strong>courrier entrant</strong> s'enregistre en cinq étapes. Le bouton <span class="ui">Étape suivante</span>, en bas de l'écran, ne passe à la suite que si l'étape est complète ; un champ obligatoire resté vide est signalé en rouge, avec son message. Vous pouvez revenir en arrière à tout moment, par <span class="ui">Étape précédente</span> ou en cliquant sur une étape déjà franchie.</p>
 <ol class="steps">
-    <li><strong>Objet</strong> : résumez le courrier en une ligne.</li>
-    <li><strong>Correspondant</strong> : tapez au moins deux lettres du nom ou de l'organisme, puis choisissez dans la liste. S'il n'existe pas encore, utilisez le lien <span class="ui">Créer un correspondant</span>.</li>
-    <li><strong>Reçu le</strong> (ou <strong>Envoyé le</strong>), <strong>canal</strong> (courrier postal, e-mail, recommandé…), <strong>service</strong>, <strong>priorité</strong> et <strong>confidentialité</strong>.</li>
-    <li><strong>Échéance</strong> : laissez-la vide pour qu'elle soit calculée automatiquement.</li>
-    <li>Cliquez sur <span class="ui">Enregistrer</span>.</li>
+    <li><strong>Courrier</strong> : l'objet (résumez le courrier en une ligne), la date de réception, la date du document, le canal (courrier postal, e-mail, recommandé…), la référence de l'expéditeur et un résumé.</li>
+    <li><strong>Expéditeur</strong> : tapez au moins deux lettres du nom ou de l'organisme, puis choisissez dans la liste. S'il n'existe pas encore, utilisez le lien <span class="ui">Créer un correspondant</span>.</li>
+    <li><strong>Traitement</strong> : le service, la priorité, la confidentialité et l'échéance (laissez-la vide pour qu'elle soit calculée automatiquement).</li>
+    <li><strong>Pièce jointe</strong> : facultatif, le scan du courrier. D'autres fichiers peuvent être ajoutés ensuite depuis la fiche.</li>
+    <li><strong>Récapitulatif</strong> : relisez, puis cliquez sur <span class="ui">Enregistrer</span>.</li>
 </ol>
+<p>Un <strong>courrier sortant</strong> ou une réponse se saisit sur un seul écran, avec <span class="ui">Enregistrer</span> dans la barre du bas.</p>
+<p>Si une information manque ou est incorrecte, un bouton rouge apparaît en bas à gauche avec le nombre d'erreurs : il en ouvre la liste, et un clic sur une erreur vous amène au champ à corriger.</p>
 <p>Lettie attribue alors le <strong>numéro d'enregistrement</strong> : <code>ENT-2026-00042</code> pour un courrier entrant, <code>SOR-2026-00017</code> pour un courrier sortant. La numérotation repart à 1 chaque année ; elle ne comporte ni doublon ni trou.</p>
 <div class="tip"><strong>Échéance automatique</strong>Sans date saisie, l'échéance d'un courrier entrant est calculée en jours ouvrés (hors week-ends et jours fériés) selon la priorité : urgente 2 jours, haute 5 jours, normale 10 jours, basse 20 jours.</div>
 <div class="tip"><strong>Confidentialité « Secret »</strong>L'objet d'un courrier secret n'apparaît jamais dans les documents qui sortent de Lettie : exports, registre imprimé, bordereau.</div>
 
 <h2><span class="section-number">5</span>Pièces jointes et bordereau</h2>
-<p>Sur la fiche d'un courrier, la zone <strong>Pièces jointes</strong> permet d'ajouter le scan du courrier et les documents associés : PDF, JPEG, PNG, WebP ou TIFF, 20 Mo au maximum. Les PDF et les images s'ouvrent dans le navigateur avec <span class="ui">Afficher</span> ; <span class="ui">Télécharger</span> les enregistre sur votre poste.</p>
+<p>Sur la fiche d'un courrier, la section <strong>Pièces jointes</strong> et son bouton <span class="ui">Ajouter</span> permettent d'ajouter le scan du courrier et les documents associés : PDF, JPEG, PNG, WebP ou TIFF, 20 Mo au maximum. Les PDF et les images s'ouvrent dans le navigateur avec <span class="ui">Afficher</span> ; <span class="ui">Télécharger</span> les enregistre sur votre poste.</p>
 <p>Le bouton <span class="ui">Bordereau</span> ouvre le <strong>bordereau d'enregistrement</strong>, prêt à imprimer et à agrafer au courrier papier. Son code-barres reprend le numéro d'enregistrement et peut être lu par une douchette.</p>
 <figure><img src="screenshots/07-bordereau.png" alt="Bordereau d'enregistrement"><figcaption>Le bordereau : numéro, code-barres, expéditeur, objet, service, échéance et cases de visa.</figcaption></figure>
 
@@ -155,25 +162,39 @@ code { font-family: "72", monospace; background: #f1f3f6; padding: 0 1mm; border
 <figure><img src="screenshots/03-liste-courrier.png" alt="Liste du courrier"><figcaption>La liste du courrier avec ses filtres.</figcaption></figure>
 <ul>
     <li><strong>Rechercher</strong> : le champ de recherche porte sur le numéro, l'objet, le correspondant et la référence externe.</li>
-    <li><strong>Filtrer</strong> par sens, statut, priorité, service, période, <strong>Mes courriers</strong> ou <strong>En retard uniquement</strong>. Le tableau se met à jour immédiatement.</li>
-    <li><strong>Trier</strong> en cliquant sur l'en-tête d'une colonne.</li>
-    <li><strong>Exporter</strong> la sélection affichée avec <span class="ui">Excel</span> ou <span class="ui">PDF</span> (voir chapitre 11).</li>
+    <li><strong>Filtrer</strong> par sens, statut, priorité, service, période, <strong>Mes courriers</strong> ou <strong>En retard uniquement</strong>, puis cliquer sur <span class="ui">Exécuter</span> (ou appuyer sur Entrée). <span class="ui">Réinitialiser</span> revient à la vue Standard.</li>
+    <li><strong>Parcourir</strong> : le titre du tableau indique le nombre de courriers trouvés ; en bas, choisissez le nombre de lignes par page et passez d'une page à l'autre.</li>
+    <li><strong>Ouvrir un courrier</strong> : cliquer sur sa ligne.</li>
+    <li><strong>Trier</strong> : cliquez sur l'en-tête d'une colonne ; un second clic inverse l'ordre.</li>
+    <li><strong>Choisir les colonnes</strong> : le bouton <span class="ui">⚙</span> ouvre les paramètres du tableau. Les colonnes choisies sont retenues sur l'appareil.</li>
 </ul>
+<h3>Enregistrer une vue</h3>
+<p>Sous le titre, le bouton <span class="ui">Standard</span> ouvre <strong>Mes vues</strong>. <span class="ui">Enregistrer sous…</span> retient sous un nom les filtres, la recherche, le tri et les colonnes en cours ; cochez <strong>Utiliser par défaut</strong> pour l'appliquer à chaque ouverture de la liste. Une vue modifiée est signalée par « (modifiée) » ; la croix en face de son nom la supprime. Les vues sont enregistrées sur l'appareil.</p>
+<h3>Agir sur plusieurs courriers</h3>
+<p>Cochez les lignes voulues (la case de l'en-tête coche toutes les lignes affichées), puis :</p>
+<ul>
+    <li><span class="ui">Affecter</span> (secrétariat, chefs de service) : choisir une personne ou un service ; un courrier qui a déjà un responsable est réaffecté ;</li>
+    <li><span class="ui">Clôturer</span> : une confirmation est demandée, avec un commentaire facultatif ;</li>
+    <li><span class="ui">Excel</span> ou <span class="ui">PDF</span> : seules les lignes cochées sont exportées. Sans sélection, l'export porte sur toute la liste filtrée (voir chapitre 11).</li>
+</ul>
+<p>Un bandeau indique ensuite combien de courriers ont été traités et, pour chaque courrier refusé, pourquoi (déjà clos, non affecté à vous, etc.).</p>
 
 <h2><span class="section-number">7</span>Traiter un courrier</h2>
-<figure><img src="screenshots/05-fiche-courrier.png" alt="Fiche d'un courrier"><figcaption>La fiche d'un courrier : les actions possibles apparaissent sous le titre, selon le statut et votre rôle.</figcaption></figure>
+<figure><img src="screenshots/05-fiche-courrier.png" alt="Fiche d'un courrier"><figcaption>La fiche d'un courrier : chiffres clés en haut, sections, et les actions possibles dans la barre du bas, selon le statut et votre rôle.</figcaption></figure>
+<p>La fiche s'ouvre en <strong>lecture</strong>. En haut : le numéro, l'objet, le statut, puis quatre repères (échéance, responsable, correspondant, pièces jointes). Cet en-tête se réduit quand vous faites défiler la page. Les onglets <strong>Informations générales</strong>, <strong>Affectations</strong>, <strong>Annotations</strong>, <strong>Pièces jointes</strong>, <strong>Courriers liés</strong> et <strong>Historique</strong> amènent directement à la section voulue. Le lien <span class="ui">Courrier</span>, tout en haut, ramène à la liste.</p>
+<p>Pour corriger les informations du courrier, cliquez sur <span class="ui">Modifier</span> : la section Informations générales devient modifiable, puis <span class="ui">Enregistrer</span> ou <span class="ui">Annuler</span> dans la barre du bas.</p>
 <h3>Affecter</h3>
-<p>Dans <strong>Affectations</strong>, choisissez une personne ou un service, le rôle — <strong>pour traitement</strong> (le responsable, un seul à la fois) ou <strong>pour information</strong> (autant que nécessaire) — une échéance et des consignes. La personne affectée reçoit une notification.</p>
+<p>Dans la section <strong>Affectations</strong>, cliquez sur <span class="ui">Affecter</span>, puis choisissez une personne ou un service, le rôle — <strong>pour traitement</strong> (le responsable, un seul à la fois) ou <strong>pour information</strong> (autant que nécessaire) — une échéance et des consignes. La personne affectée reçoit une notification.</p>
 <p>Pour changer de responsable, utilisez <span class="ui">Réaffecter</span> : l'ancien responsable est déchargé et le motif est conservé dans l'historique.</p>
 <h3>Traiter</h3>
 <ul>
     <li><span class="ui">Prendre en charge</span> : le courrier passe « En cours ».</li>
     <li><span class="ui">En attente de réponse</span> : vous attendez un élément extérieur.</li>
-    <li><strong>Annotations</strong> : notez l'avancement. Une annotation <em>privée</em> n'est visible que par vous.</li>
+    <li><strong>Annotations</strong> : le bouton <span class="ui">Annoter</span> permet de noter l'avancement. Une annotation <em>privée</em> n'est visible que par vous.</li>
     <li><span class="ui">Clôturer</span> : le traitement est terminé. Une confirmation est demandée et vous pouvez laisser un commentaire.</li>
 </ul>
 <figure><img src="screenshots/06-cloture-confirmation.png" alt="Confirmation de clôture"><figcaption>Chaque action importante demande une confirmation.</figcaption></figure>
-<p>En bas de la fiche, l'<strong>historique</strong> retrace chaque modification avec son auteur, sa date, et les valeurs avant / après.</p>
+<p>Ces actions se trouvent dans la barre du bas de la fiche. La section <strong>Historique</strong> retrace chaque modification avec son auteur, sa date, et les valeurs avant / après.</p>
 <div class="tip"><strong>Agents</strong>Un agent agit sur les courriers qui lui sont affectés, ou sur ceux d'un collègue absent qu'il remplace. Pour un autre courrier, demandez une affectation au secrétariat ou à votre chef de service.</div>
 
 <h2><span class="section-number">8</span>Répondre à un courrier</h2>
@@ -202,22 +223,31 @@ code { font-family: "72", monospace; background: #f1f3f6; padding: 0 1mm; border
 <p>Cliquez sur une notification pour ouvrir le courrier ; elle est alors marquée comme lue. Les rappels sont calculés chaque matin.</p>
 
 <h2><span class="section-number">11</span>Registre et exports</h2>
-<figure><img src="screenshots/11-registre.png" alt="Registre du courrier"><figcaption>Le registre : choisir le sens et la période, puis le format.</figcaption></figure>
-<p>Le <strong>registre du courrier</strong> est la liste chronologique des courriers enregistrés. Choisissez le sens (entrant ou sortant) et la période, puis <span class="ui">Excel</span> ou <span class="ui">PDF</span>.</p>
+<figure><img src="screenshots/11-registre.png" alt="Registre du courrier"><figcaption>Le registre : choisir le sens et la période, vérifier la liste, puis exporter.</figcaption></figure>
+<p>Le <strong>registre du courrier</strong> est la liste chronologique des courriers enregistrés. Choisissez le sens (entrant ou sortant) et la période, puis <span class="ui">Exécuter</span> : la liste affiche les courriers concernés, dans l'ordre des numéros. Les boutons <span class="ui">Excel</span> et <span class="ui">PDF</span> produisent ensuite le document.</p>
 <ul>
     <li><strong>Excel</strong> : les dates sont de vraies dates (triables et filtrables), la ligne d'en-tête reste visible.</li>
     <li><strong>PDF</strong> : format A4, prêt à imprimer ou à archiver, avec la date de génération et la pagination.</li>
 </ul>
 <p>La liste du courrier s'exporte de la même façon, avec les filtres et le tri affichés.</p>
 
-<h2><span class="section-number">12</span>Statistiques</h2>
+<h2><span class="section-number">12</span>Vue d'ensemble et statistiques</h2>
+<p>Les chefs de service, la direction et les administrateurs disposent d'une <strong>Vue d'ensemble</strong> (menu <span class="ui">Pilotage</span>, ou tuile du même nom sur l'accueil). Elle réunit en un écran :</p>
+<ul>
+    <li>des <strong>indicateurs</strong> avec leur état — « Conforme », « À surveiller » ou « À traiter » : courriers en retard, courriers à affecter, délai moyen de traitement (objectif : 14 jours), part des clôtures en retard ;</li>
+    <li>de <strong>courtes listes</strong> : les retards les plus anciens et les courriers en attente d'affectation, cinq lignes chacune ;</li>
+    <li>deux <strong>graphiques</strong> : les volumes des 8 dernières semaines et les retards par service.</li>
+</ul>
+<p>Cliquez sur le titre d'une carte pour ouvrir la liste ou les statistiques correspondantes, déjà filtrées ; une ligne d'une liste ouvre directement le courrier.</p>
+<figure><img src="screenshots/17-vue-d-ensemble.png" alt="Vue d'ensemble"><figcaption>La vue d'ensemble d'un chef de service.</figcaption></figure>
+<h3>Statistiques détaillées</h3>
 <figure><img src="screenshots/12-statistiques.png" alt="Statistiques"><figcaption>Volumes, délais, retards et principaux correspondants sur la période choisie.</figcaption></figure>
 <p>La page <span class="ui">Statistiques</span> présente, pour la période et le service choisis : les volumes entrants et sortants, le <strong>délai moyen de traitement</strong> (de la réception à la clôture) et sa médiane, la part des courriers clos après l'échéance, les retards en cours par ancienneté et les correspondants les plus fréquents. Sous chaque graphique, <span class="ui">Afficher les données</span> présente les mêmes chiffres sous forme de tableau.</p>
 
 <h2><span class="section-number">13</span>Sur téléphone, thème sombre</h2>
 <p>Lettie s'utilise aussi sur téléphone et tablette. Sur un écran tactile, l'affichage s'adapte tout seul : boutons et champs plus grands, faciles à toucher du doigt. Avec une souris, l'affichage est plus compact pour montrer davantage d'informations.</p>
-<p>Le bouton <span class="ui">🌙</span> en haut de l'écran passe au <strong>thème sombre</strong>, et inversement. Le choix est mémorisé sur l'appareil. Si votre système demande un contraste élevé, Lettie l'applique automatiquement.</p>
-<figure class="phone"><img src="screenshots/14-mobile-accueil.png" alt="Tableau de bord sur téléphone"><figcaption>Le tableau de bord sur téléphone.</figcaption></figure><figure class="phone"><img src="screenshots/15-mobile-liste.png" alt="Liste sur téléphone"><figcaption>La liste : chaque courrier devient une carte.</figcaption></figure>
+<p>Dans le menu du profil (vos initiales, en haut à droite), <span class="ui">Passer au thème sombre</span> change de thème, et inversement. Le choix est mémorisé sur l'appareil. Si votre système demande un contraste élevé, Lettie l'applique automatiquement.</p>
+<figure class="phone"><img src="screenshots/14-mobile-accueil.png" alt="Accueil sur téléphone"><figcaption>L'accueil sur téléphone : une tuile par ligne.</figcaption></figure><figure class="phone"><img src="screenshots/15-mobile-liste.png" alt="Liste sur téléphone"><figcaption>La liste : chaque courrier devient une carte.</figcaption></figure>
 <figure><img src="screenshots/16-theme-sombre.png" alt="Liste du courrier en thème sombre"><figcaption>La liste du courrier en thème sombre.</figcaption></figure>
 <p>Un bandeau vous avertit si la connexion est perdue : les modifications ne peuvent alors pas être enregistrées.</p>
 

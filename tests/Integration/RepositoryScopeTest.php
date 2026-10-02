@@ -184,6 +184,16 @@ final class RepositoryScopeTest extends TestCase
         self::assertSame([self::$ids['A']['site']], array_values(array_unique(array_column($deadlines->pendingDueBy('2026-12-31'), 'site_id'))));
         self::assertSame(2, $deadlines->counters(null, '2026-09-30', '2026-10-07')['overdue']);
         self::assertCount(2, $deadlines->upcoming(null, '2026-12-31'));
+        // Home page counters: only site A's mail (site B holds as many).
+        $count = static fn (string $where): int => (int) self::$pdo->query(
+            'SELECT COUNT(*) FROM mails WHERE site_id = ' . self::$ids['A']['site'] . ' AND ' . $where
+        )->fetchColumn();
+        self::assertGreaterThan($count('1 = 1'), (int) self::$pdo->query('SELECT COUNT(*) FROM mails')->fetchColumn());
+        self::assertSame([
+            'unassigned' => $count("status = 'registered' AND direction = 'incoming'"),
+            'pending' => $count("status NOT IN ('answered', 'closed', 'archived')"),
+            'registered_today' => $count('1 = 1'),
+        ], $deadlines->workload(new DateTimeImmutable('2000-01-01')));
 
         $stats = self::repo(Repositories\StatsRepository::class);
         [$from, $to] = [new DateTimeImmutable('2026-01-01'), new DateTimeImmutable('2027-01-01')];

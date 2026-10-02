@@ -5,6 +5,9 @@ const assert = require('node:assert/strict');
 const LT = require('../../public/assets/js/lt-core.js');
 const D = require('../../public/assets/js/pages/dashboard.js');
 
+// Colours come from the theme: the tests hand the builders a palette read from fake theme variables.
+const PALETTE = D.themePalette((name) => 'theme(' + name + ')');
+
 const t = LT.createTranslator({
     js: {
         stats: {
@@ -36,7 +39,7 @@ test('periodLabel for days, ISO weeks and months', () => {
 });
 
 test('volumeChart stacks incoming and outgoing per period', () => {
-    const c = D.volumeChart(data, t, D.DEFAULT_PALETTE, 'fr');
+    const c = D.volumeChart(data, t, PALETTE, 'fr');
     assert.equal(c.type, 'bar');
     assert.deepEqual(c.data.labels, ['28/09', '29/09', '30/09']);
     assert.deepEqual(c.data.datasets.map((d) => [d.label, d.data]), [['Entrant', [5, 0, 7]], ['Sortant', [1, 2, 3]]]);
@@ -46,24 +49,24 @@ test('volumeChart stacks incoming and outgoing per period', () => {
 });
 
 test('department and processing charts name the missing department', () => {
-    const dep = D.departmentChart(data, t);
+    const dep = D.departmentChart(data, t, PALETTE);
     assert.equal(dep.options.indexAxis, 'y');
     assert.deepEqual(dep.data.labels, ['RH', 'Sans service']);
     assert.deepEqual(dep.data.datasets[2].data, [2, 0], 'overdue series');
 
-    const proc = D.processingChart(data, t);
+    const proc = D.processingChart(data, t, PALETTE);
     assert.deepEqual(proc.data.labels, ['Sans service']);
     assert.deepEqual(proc.data.datasets[0].data, [10]);
     assert.equal(proc.options.plugins.legend.display, false);
 });
 
 test('overdue doughnut and top correspondents', () => {
-    const o = D.overdueChart(data, t);
+    const o = D.overdueChart(data, t, PALETTE);
     assert.equal(o.type, 'doughnut');
     assert.deepEqual(o.data.labels, ['1-7 j de retard', '8-30 j de retard', '31+ j de retard']);
     assert.deepEqual(o.data.datasets[0].data, [2, 1, 1]);
 
-    const c = D.correspondentsChart(data, t);
+    const c = D.correspondentsChart(data, t, PALETTE);
     assert.deepEqual(c.data.labels, ['Mairie']);
     assert.equal(c.options.scales.x.stacked, true);
 });
@@ -82,15 +85,28 @@ test('kpis format numbers and durations for the locale', () => {
 });
 
 test('isEmptyChart: no labels, or only zeros', () => {
-    assert.equal(D.isEmptyChart(D.volumeChart(data, t, D.DEFAULT_PALETTE, 'fr')), false);
+    assert.equal(D.isEmptyChart(D.volumeChart(data, t, PALETTE, 'fr')), false);
     const zeros = Object.assign({}, data, { overdue: { total: 0, buckets: { '1-7': 0, '8-30': 0, '31+': 0 }, by_department: [] } });
-    assert.equal(D.isEmptyChart(D.overdueChart(zeros, t)), true, 'an all-zero doughnut is empty');
-    assert.equal(D.isEmptyChart(D.correspondentsChart(Object.assign({}, data, { correspondents: [] }), t)), true);
+    assert.equal(D.isEmptyChart(D.overdueChart(zeros, t, PALETTE)), true, 'an all-zero doughnut is empty');
+    assert.equal(D.isEmptyChart(D.correspondentsChart(Object.assign({}, data, { correspondents: [] }), t, PALETTE)), true);
 });
 
 test('tableFromChart gives an accessible table for every chart', () => {
-    const table = D.tableFromChart(D.volumeChart(data, t, D.DEFAULT_PALETTE, 'fr'));
+    const table = D.tableFromChart(D.volumeChart(data, t, PALETTE, 'fr'));
     assert.deepEqual(table.headers, ['', 'Entrant', 'Sortant']);
     assert.deepEqual(table.rows[0], ['28/09', '5', '1']);
-    assert.deepEqual(D.tableFromChart(D.overdueChart(data, t)).rows[2], ['31+ j de retard', '1']);
+    assert.deepEqual(D.tableFromChart(D.overdueChart(data, t, PALETTE)).rows[2], ['31+ j de retard', '1']);
+});
+
+test('the palette is read from UI5 theme variables only', () => {
+    assert.ok(Object.values(D.VARIABLES).every((name) => name.startsWith('--sap')));
+    assert.equal(PALETTE.incoming, 'theme(--sapChart_OrderedColor_1)');
+    assert.equal(PALETTE.danger, 'theme(--sapChart_Bad)');
+    assert.equal(D.themePalette(() => '  value  ').text, 'value');
+});
+
+test('no colour is written in the source of the statistics charts', () => {
+    const source = require('node:fs').readFileSync(require('node:path').join(__dirname, '../../public/assets/js/pages/dashboard.js'), 'utf8');
+    assert.equal(/#[0-9a-f]{6}\b/i.test(source), false, 'no hex colour');
+    assert.equal(/\brgba?\(|\bhsla?\(/i.test(source), false, 'no colour function');
 });

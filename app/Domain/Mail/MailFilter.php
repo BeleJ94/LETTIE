@@ -21,6 +21,8 @@ final class MailFilter
         public readonly ?string $overdueBefore = null,
         /** When set, only mail with an active assignment to one of these users ("my mail"). @var list<int>|null */
         public readonly ?array $assignedToUserIds = null,
+        /** When set, only these mails (export of the rows selected in the list). @var list<int>|null */
+        public readonly ?array $ids = null,
     ) {
     }
 }

@@ -184,33 +184,41 @@ test('confirmAttributes reads data-lt-confirm-* from a dataset', () => {
     assert.equal(LT.confirmAttributes(undefined).message, '');
 });
 
-test('confirmOptions builds SweetAlert2 options', () => {
-    const t = LT.createTranslator({ js: { confirm: { title: 'Confirmation', yes: 'Confirmer', no: 'Annuler', input_required: 'Obligatoire' } } });
+test('dialogSpec describes a confirmation with the Fiori rules', () => {
+    const t = LT.createTranslator({ js: { ok: 'OK', confirm: { title: 'Confirmation', yes: 'Confirmer', no: 'Annuler', input_required: 'Obligatoire' }, dialog: { info: 'Information', warning: 'Attention', error: 'Erreur' } } });
 
-    const simple = LT.confirmOptions({ message: 'Rouvrir ?' }, t);
-    assert.equal(simple.icon, 'question');
+    const simple = LT.dialogSpec({ confirm: true, attrs: { message: 'Rouvrir ?' } }, t);
     assert.equal(simple.title, 'Confirmation');
-    assert.equal(simple.text, 'Rouvrir ?');
-    assert.equal(simple.confirmButtonText, 'Confirmer');
-    assert.equal(simple.cancelButtonText, 'Annuler');
-    assert.equal(simple.showCancelButton, true);
-    assert.equal(simple.focusCancel, false);
-    assert.equal(simple.input, undefined);
-    assert.equal(simple.customClass.confirmButton, '');
+    assert.equal(simple.message, 'Rouvrir ?');
+    assert.equal(simple.state, 'Critical');
+    assert.equal(simple.confirmText, 'Confirmer');
+    assert.equal(simple.confirmDesign, 'Emphasized');
+    assert.equal(simple.cancelText, 'Annuler');
+    assert.equal(simple.initialFocus, 'confirm');
+    assert.equal(simple.input, null);
 
-    const danger = LT.confirmOptions({ message: 'Archiver ?', title: 'Archiver', button: 'Archiver', danger: true }, t);
-    assert.equal(danger.icon, 'warning');
-    assert.equal(danger.confirmButtonText, 'Archiver');
-    assert.equal(danger.focusCancel, true, 'irreversible: cancel is the default');
-    assert.equal(danger.customClass.confirmButton, 'lt-swal-danger');
+    const danger = LT.dialogSpec({ confirm: true, attrs: { message: 'Archiver ?', title: 'Archiver', button: 'Archiver', danger: true } }, t);
+    assert.equal(danger.state, 'Negative');
+    assert.equal(danger.confirmText, 'Archiver', 'the action carries its verb');
+    assert.equal(danger.confirmDesign, 'Negative');
+    assert.equal(danger.initialFocus, 'cancel', 'irreversible: cancel is the default');
 
-    const withInput = LT.confirmOptions({ message: 'Réaffecter ?', input: 'comment', inputLabel: 'Motif', inputRequired: true }, t);
-    assert.equal(withInput.input, 'textarea');
-    assert.equal(withInput.inputLabel, 'Motif');
-    assert.equal(withInput.inputAttributes.maxlength, '1000');
-    assert.equal(withInput.inputValidator('   '), 'Obligatoire');
-    assert.equal(withInput.inputValidator('Congés'), undefined);
-    assert.equal(LT.confirmOptions({ message: 'x', input: 'comment' }, t).inputValidator, undefined, 'optional by default');
+    const withInput = LT.dialogSpec({ confirm: true, attrs: { message: 'Réaffecter ?', input: 'comment', inputLabel: 'Motif', inputRequired: true } }, t);
+    assert.deepEqual(withInput.input, { name: 'comment', label: 'Motif', required: true, requiredMessage: 'Obligatoire', maxlength: 1000 });
+    assert.equal(LT.dialogSpec({ confirm: true, attrs: { message: 'x', input: 'comment' } }, t).input.required, false, 'optional by default');
+});
+
+test('dialogSpec describes a message to acknowledge, with its semantic state', () => {
+    const t = LT.createTranslator({ js: { ok: 'OK', dialog: { info: 'Information', warning: 'Attention', error: 'Erreur' } } });
+    const error = LT.dialogSpec({ message: 'Refusé.', kind: 'error', details: ['Objet obligatoire.'] }, t);
+    assert.equal(error.title, 'Erreur');
+    assert.equal(error.state, 'Negative');
+    assert.deepEqual(error.details, ['Objet obligatoire.']);
+    assert.equal(error.cancelText, null, 'nothing to cancel');
+    assert.equal(error.confirmText, 'OK');
+    assert.equal(LT.dialogSpec({ message: 'x', kind: 'warning' }, t).state, 'Critical');
+    assert.equal(LT.dialogSpec({ message: 'x' }, t).state, 'Information');
+    assert.equal(LT.dialogSpec({ message: 'x', kind: 'nope' }, t).title, 'Information');
 });
 
 test('badgeText hides zero and caps at 99+', () => {

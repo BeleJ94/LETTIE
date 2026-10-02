@@ -8,9 +8,9 @@ Lettie est un logiciel web de gestion du courrier entrant et sortant.
 - **MariaDB 10.11**, jeu de caractères `utf8mb4` / collation `utf8mb4_unicode_ci`.
 - **PDO** uniquement, **requêtes préparées obligatoires** (jamais de concaténation de valeurs dans le SQL). `PDO::ATTR_ERRMODE => ERRMODE_EXCEPTION`, `ATTR_EMULATE_PREPARES => false`.
 - **Pas d'ORM**, pas de query builder : SQL écrit à la main dans les Repositories.
-- **Front-end** : JavaScript classique + **jQuery 3.7.1** (fichier local dans `public/`). Pas de TypeScript, pas de framework JS.
-- **Aucun outil de build** (pas de Webpack, Vite, Sass, etc.). Les fichiers CSS/JS servis sont ceux écrits.
-- **Aucune dépendance Composer ni npm en production.** Composer sert **uniquement** à l'autoload PSR-4 `App\` → `app/`. Ne jamais ajouter de paquet dans `require`. En développement seulement : PHPUnit (`require-dev`) et Playwright (`devDependencies` de `package.json`, jamais déployé).
+- **Front-end** : JavaScript classique + **jQuery 3.7.1** (fichier local dans `public/`) et **UI5 Web Components** pour toute l'interface (voir Design & UX). Pas de TypeScript, pas de framework JS.
+- **Aucun outil de build au déploiement** (pas de Webpack, Vite, Sass, etc.). Les fichiers CSS/JS servis sont ceux écrits. Seule exception : le bundle UI5 Web Components, produit **en développement** par `npm run ui5:build` (esbuild) et versionné dans `public/assets/vendor/` comme les autres bibliothèques ; le serveur n'exécute jamais npm.
+- **Aucune dépendance Composer ni npm en production.** Composer sert **uniquement** à l'autoload PSR-4 `App\` → `app/`. Ne jamais ajouter de paquet dans `require`. En développement seulement : PHPUnit (`require-dev`), et dans les `devDependencies` de `package.json` (jamais déployées) Playwright, esbuild et les paquets `@ui5/webcomponents*`.
 
 ## Commandes
 
@@ -20,13 +20,15 @@ Lettie est un logiciel web de gestion du courrier entrant et sortant.
 | `composer migrate` / `composer migrate:status` | Applique / liste les migrations (base du `.env`) |
 | `composer demo:seed` (`:medium`, `:large`) | Recrée la base `lettie_demo` (petite : ~10 mois, moyenne : 2 ans, grande : ~100 000 courriers) et lance les contrôles ; options après `--` : `--seed=N`, `--skip-checks` |
 | `npm test` | Tests `node:test` des modules JS purs (`tests/js/*.test.js`) |
+| `npm run ui5:build` | Reconstruit le bundle UI5 (`tools/ui5/build-bundle.mjs`, composants listés dans `tools/ui5/components.mjs`) ; le résultat se committe |
+| `npm run ui5:check` | Contrôle dans le navigateur (base `lettie_demo`, à générer avant par `composer demo:seed`) : CSP, thème, chaque modèle d'écran Fiori |
 | `npm run screenshots` | Base `lettie_demo` régénérée (`tools/demo/seed.php`), serveur PHP intégré, captures dans `docs/guide/screenshots/` |
 | `npm run guide` | Captures + `docs/guide/index.html` + `docs/guide/Lettie-guide-utilisateur.pdf` (source : `tools/guide/guide.html`) |
 
 - **Suites PHPUnit** : `unit` (sans base : `tests/Core`, `Domain`, `Middleware`, `Architecture`), `integration` (repositories et services, `tests/Integration`), `functional` (requêtes HTTP via le Kernel, `tests/Functional`, classe de base `Tests\Support\FunctionalTestCase`). Les deux dernières **recréent** la base `TEST_DB_NAME` (doit finir par `_test`).
 - **Règles vérifiées par les tests** : la matrice d'accès (`tests/Functional/AccessMatrixTest.php`) doit lister toute nouvelle route GET ; `tests/Integration/RepositoryScopeTest.php` doit couvrir tout nouveau repository lié à un site.
 - **Données de démo** : uniquement dans `lettie_demo` (nom obligatoirement en `_demo`), jamais dans la base du `.env` (le journal d'activité n'accepte aucune suppression). Proportions dans `tools/demo/profile.php` (à modifier là, pas dans le code). Simulation chronologique par les vrais services (`Tools\Demo\Generator`), cas limites planifiés et vérifiés (`EdgeCases`), historique en masse pour la grande taille (`BulkWriter`, même forme que les services), contrôles de fin (`Checks` : invariants bloquants, proportions et durées indicatives). Même graine, mêmes données.
-- Les `<th>` des tableaux DataTables utilisent `data-lt-*` : DataTables lit les `data-*` simples comme options de colonne.
+- Les `<th>` des tableaux DataTables utilisent `data-lt-*` : DataTables lit les `data-*` simples comme options de colonne. DataTables est le tableau des écrans de liste (courrier, registre, correspondants ; gabarit dans `views/partials/list-report/`) : c'est une exception voulue à la règle « composants UI5 uniquement » (voir Design & UX).
 
 ## Architecture en couches
 
@@ -65,7 +67,7 @@ lang/            # Traductions : fr.php, en.php (tableaux clé => texte)
 database/
   migrations/    # Scripts SQL versionnés : NNN_description.sql (001_, 002_…), appliqués par bin/migrate.php
 bin/             # Scripts CLI (migrations, maintenance)
-tools/           # Outils de développement : demo/ (base de démo, routeur du serveur PHP), playwright/ (captures, guide), guide/ (source du guide)
+tools/           # Outils de développement : demo/ (base de démo, routeur du serveur PHP), playwright/ (captures, guide), guide/ (source du guide), ui5/ (bundle UI5, contrôle navigateur)
 docs/            # Documentation : déploiement Plesk, guide utilisateur généré (docs/guide/)
 public/          # Racine web : index.php (front controller), assets/css, assets/js, assets/vendor/<lib>-<version>/ (figé, avec licence)
 tests/           # PHPUnit 11.5 : Core, Domain, Middleware, Architecture, Integration (base *_test recréée)
@@ -81,10 +83,10 @@ Seul `public/` est exposé par le serveur web.
 - **Sécurité** : jeton CSRF sur tout formulaire/requête modifiant des données ; mots de passe via `password_hash`/`password_verify` ; uploads stockés hors de `public/`.
 - **Nommage** : classes en `PascalCase`, méthodes/variables en `camelCase`, tables et colonnes en `snake_case` ; suffixes `…Controller`, `…Service`, `…Repository`.
 - **Style** : PSR-12, types déclarés pour paramètres, retours et propriétés ; `readonly` quand pertinent ; enums PHP natives pour les statuts.
-- **JS** : pas de script inline (CSP). Modules purs UMD sans DOM (`lt-core.js`, `lt-tables.js`) testés avec `node --test "tests/js/*.test.js"` ; `app.js` relie DOM, jQuery et bibliothèques via des attributs `data-lt-*`. AJAX uniquement via `LT.api` (jeton CSRF, PUT/PATCH/DELETE tunnelisés en POST + `_method`). Textes JS dans la section `js` de `lang/*.php`.
-- **Vendor** : versions figées dans `public/assets/vendor/<lib>-<version>/` (jQuery 3.7.1, DataTables 2.1.8, Chart.js 4.4.7, SweetAlert2 11.14.5 sans le build `.all`, Lucide 0.460.0, ExcelJS 4.4.0, pdfmake 0.2.14, IBM Plex Sans 5.1.0). Aucun CDN. Chart.js, ExcelJS et pdfmake ne sont chargés que par les pages qui en ont besoin (section `scripts`).
+- **JS** : pas de script inline (CSP). Modules purs UMD sans DOM (`lt-core.js`, `lt-listreport.js`, `lt-export.js`, `lt-tables.js`, fonctions de décision de `lt-theme.js`) testés avec `node --test "tests/js/*.test.js"` ; `app.js` et les scripts de `pages/` relient DOM, jQuery et composants UI5 via des attributs `data-lt-*`. Les scripts de page attendent l'événement `lt:ui5-ready` avant de toucher aux composants ou de lire les variables du thème. AJAX uniquement via `LT.api` (jeton CSRF, PUT/PATCH/DELETE tunnelisés en POST + `_method`). Textes JS dans la section `js` de `lang/*.php`.
+- **Vendor** : versions figées dans `public/assets/vendor/<lib>-<version>/` (jQuery 3.7.1, UI5 Web Components 2.27.2 avec la police 72, DataTables 2.1.8 pour les tableaux des listes, Chart.js 4.4.7, ExcelJS 4.4.0, pdfmake 0.2.14 ; et, tant que des écrans ne sont pas migrés, Lucide 0.460.0). Aucun CDN. Chart.js, ExcelJS, pdfmake et DataTables ne sont chargés que par les pages qui en ont besoin (sections `scripts`, `libraries`, `styles` du layout).
 - **Tables serveur** : `GET ?page=&per_page=&sort=&dir=asc|desc&q=&<filtres>` → `{"data": [...], "meta": {"total": n, "filtered": n}}` ; `sort` doit être validé contre une liste blanche côté serveur.
-- **CSS** : variables `--lt-*` dans `:root` (clair/sombre), mode terrain = classe `lt-field-mode` sur `<html>`.
+- **CSS** : `app.css` ne contient que de la mise en page ; couleurs, polices, tailles et espacements viennent des variables du thème UI5 (`--sap*`), vérifié par un test d'architecture. Thème et densité : `lt-theme.js` (voir Design & UX).
 - **Base de données** : ne jamais modifier une migration déjà appliquée ; en créer une nouvelle.
 
 ## Sécurité et accès
@@ -93,7 +95,7 @@ Seul `public/` est exposé par le serveur web.
 - **Autorisation** : chaque route protégée déclare ses middlewares (`auth`, `can:mail.view,…`) dans `app/routes.php`. Un contrôleur ne vérifie jamais un rôle directement.
 - **SiteScope obligatoire** : tout repository étend `App\Repositories\Repository` (constructeur imposé) et filtre les tables liées à un site avec `scopeSql()` en lecture et en écriture, ou `assertInScope()` à la création. `SiteScope::system()` est réservé au code technique (authentification, CLI) et doit être explicite. Vérifié par `tests/Architecture`.
 - **Connexion** : `password_hash`/`password_verify`, verrouillage après 5 échecs sur 15 minutes par compte (20 par IP), régénération de l'ID de session et du jeton CSRF à la connexion.
-- **CSP stricte** : `script-src 'self'`, aucun script ni style inline, aucun attribut `on…=` ni `style=` dans les vues (vérifié par test). Tout le JS va dans `public/js/`.
+- **CSP stricte** : `script-src 'self'`, aucun script ni style inline, aucun attribut `on…=` ni `style=` dans les vues (vérifié par test). Tout le JS va dans `public/assets/js/`.
 - **Cookies** : Secure (selon `SESSION_SECURE`), HttpOnly, SameSite=Lax par défaut.
 - **Journal d'activité** : toute création/modification passe par `AuditTrail` dans la transaction du Service (valeurs avant/après, uniquement les champs modifiés). `activity_log` est en ajout seul (triggers qui refusent UPDATE/DELETE).
 - **Fichiers** : stockés via `FileStorage` hors de `public/` (`STORAGE_PATH`), nom aléatoire, extension déduite du type MIME détecté (`finfo`), jamais du nom ni du type envoyé par le navigateur. Téléchargement uniquement par contrôleur (contrôle SiteScope).
@@ -108,7 +110,7 @@ Seul `public/` est exposé par le serveur web.
 - **Affectation** : un seul responsable « pour traitement » actif à la fois (sinon réaffectation), copies « pour information » illimitées. Clôture et réponse terminent les affectations actives.
 - **Absences** : pendant une délégation, les nouvelles affectations vont au délégué (`DelegationResolver`, chaînes suivies, cycles arrêtés) et le délégué peut traiter les courriers de l'absent.
 - **Réponse** : lier un sortant (`reply_to`) à un entrant clôture l'entrant, dans la même transaction.
-- **Confirmations** : actions sensibles via `data-lt-confirm*` sur le formulaire (SweetAlert2, options construites par `LT.confirmOptions`), jamais de `confirm()` inline.
+- **Confirmations** : actions sensibles confirmées dans un `ui5-dialog`, jamais de `confirm()` inline. Sur une Object Page : `data-confirm*` sur le bouton d'action ; ailleurs : `data-lt-confirm*` sur le formulaire (dialogue construit à partir de `LT.dialogSpec`).
 
 ## Échéances, notifications, tâche quotidienne
 

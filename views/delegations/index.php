@@ -10,12 +10,15 @@
  * @var array<string, mixed> $values
  * @var array<string, list<string>> $errors
  */
+use App\Core\Ui5;
+
 $this->layout('layouts/main');
 $v = static fn (string $key): string => is_scalar($values[$key] ?? null) ? (string) $values[$key] : '';
-$invalid = static fn (string $key): string => isset($errors[$key]) ? ' aria-invalid="true" aria-describedby="' . e($key) . '-error"' : '';
-$fieldErrors = fn (string $key): string => isset($errors[$key]) ? $this->partial('partials/field-errors', ['field' => $key, 'messages' => $errors[$key]]) : '';
 ?>
 <?php $this->start('title') ?><?= e(__('delegation.title')) ?><?php $this->stop() ?>
+<?php $this->start('scripts') ?>
+<script src="<?= e($basePath) ?>/assets/js/pages/object-page.js"></script>
+<?php $this->stop() ?>
 
 <div class="lt-page-header">
     <h1><?= e(__('delegation.title')) ?></h1>
@@ -57,48 +60,48 @@ $fieldErrors = fn (string $key): string => isset($errors[$key]) ? $this->partial
 
     <section class="lt-card" aria-labelledby="new-title">
         <h2 id="new-title"><?= e(__('delegation.new')) ?></h2>
-        <?php if ($errors !== []): ?>
-            <div class="lt-alert lt-alert--error" role="alert"><?= e(__('js.errors.validation')) ?></div>
-        <?php endif; ?>
-        <form method="post" action="<?= e($basePath) ?>/delegations" class="lt-form" novalidate>
+        <form id="delegation-form" method="post" action="<?= e($basePath) ?>/delegations" novalidate data-lt-validate>
             <?= $csrf->field() ?>
-            <?php if ($canChooseDelegator): ?>
-                <div class="lt-field">
-                    <label for="delegator_id"><?= e(__('delegation.fields.delegator_id')) ?></label>
-                    <select id="delegator_id" name="delegator_id"<?= $invalid('delegator_id') ?>>
+            <ui5-form layout="S1 M1 L1 XL1" label-span="S12 M12 L12 XL12" item-spacing="Large" accessible-name="<?= e(__('delegation.new')) ?>">
+                <?php if ($canChooseDelegator): ?>
+                    <ui5-form-item>
+                        <ui5-label slot="labelContent" for="delegator_id" show-colon><?= e(__('delegation.fields.delegator_id')) ?></ui5-label>
+                        <?php /* Long list: a ComboBox filters while typing; the id of the chosen person is what is submitted. */ ?>
+                        <ui5-combobox id="delegator_id" name="delegator_id" selected-value="<?= e($v('delegator_id') ?: (string) $meId) ?>"<?= Ui5::state($errors, 'delegator_id') ?>>
+                            <?php foreach ($users as $u): ?>
+                                <ui5-cb-item text="<?= e($u['name']) ?>" value="<?= e($u['id']) ?>" additional-text="<?= e(__('roles.' . $u['role'])) ?>"></ui5-cb-item>
+                            <?php endforeach; ?>
+                            <?= Ui5::stateMessage($errors, 'delegator_id') ?>
+                        </ui5-combobox>
+                    </ui5-form-item>
+                <?php endif; ?>
+                <ui5-form-item>
+                    <ui5-label slot="labelContent" for="delegate_id" required show-colon><?= e(__('delegation.fields.delegate_id')) ?></ui5-label>
+                    <ui5-combobox id="delegate_id" name="delegate_id" required selected-value="<?= e($v('delegate_id')) ?>"<?= Ui5::state($errors, 'delegate_id') ?>>
                         <?php foreach ($users as $u): ?>
-                            <option value="<?= e($u['id']) ?>"<?= (string) $u['id'] === ($v('delegator_id') ?: (string) $meId) ? ' selected' : '' ?>><?= e($u['name']) ?></option>
+                            <ui5-cb-item text="<?= e($u['name']) ?>" value="<?= e($u['id']) ?>" additional-text="<?= e(__('roles.' . $u['role'])) ?>"></ui5-cb-item>
                         <?php endforeach; ?>
-                    </select>
-                    <?= $fieldErrors('delegator_id') ?>
-                </div>
-            <?php endif; ?>
-            <div class="lt-field">
-                <label for="delegate_id"><?= e(__('delegation.fields.delegate_id')) ?> *</label>
-                <select id="delegate_id" name="delegate_id" required<?= $invalid('delegate_id') ?>>
-                    <option value="">—</option>
-                    <?php foreach ($users as $u): ?>
-                        <option value="<?= e($u['id']) ?>"<?= (string) $u['id'] === $v('delegate_id') ? ' selected' : '' ?>><?= e($u['name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <?= $fieldErrors('delegate_id') ?>
+                        <?= Ui5::stateMessage($errors, 'delegate_id') ?>
+                    </ui5-combobox>
+                </ui5-form-item>
+                <ui5-form-item>
+                    <ui5-label slot="labelContent" for="starts_on" required show-colon><?= e(__('delegation.fields.starts_on')) ?></ui5-label>
+                    <ui5-date-picker id="starts_on" name="starts_on" required value-format="yyyy-MM-dd" display-format="dd/MM/yyyy" placeholder="<?= e(__('list.date_placeholder')) ?>"
+                        value="<?= e($v('starts_on')) ?>"<?= Ui5::state($errors, 'starts_on') ?>><?= Ui5::stateMessage($errors, 'starts_on') ?></ui5-date-picker>
+                </ui5-form-item>
+                <ui5-form-item>
+                    <ui5-label slot="labelContent" for="ends_on" required show-colon><?= e(__('delegation.fields.ends_on')) ?></ui5-label>
+                    <ui5-date-picker id="ends_on" name="ends_on" required value-format="yyyy-MM-dd" display-format="dd/MM/yyyy" min-date="<?= e($today) ?>" placeholder="<?= e(__('list.date_placeholder')) ?>"
+                        value="<?= e($v('ends_on')) ?>"<?= Ui5::state($errors, 'ends_on') ?>><?= Ui5::stateMessage($errors, 'ends_on') ?></ui5-date-picker>
+                </ui5-form-item>
+                <ui5-form-item>
+                    <ui5-label slot="labelContent" for="reason" show-colon><?= e(__('delegation.fields.reason')) ?></ui5-label>
+                    <ui5-input id="reason" name="reason" maxlength="255" value="<?= e($v('reason')) ?>"<?= Ui5::state($errors, 'reason') ?>><?= Ui5::stateMessage($errors, 'reason') ?></ui5-input>
+                </ui5-form-item>
+            </ui5-form>
+            <div class="lt-form-actions">
+                <ui5-button design="Emphasized" icon="add" data-lt-submit="delegation-form"><?= e(__('delegation.save')) ?></ui5-button>
             </div>
-            <div class="lt-field">
-                <label for="starts_on"><?= e(__('delegation.fields.starts_on')) ?> *</label>
-                <input type="date" id="starts_on" name="starts_on" required value="<?= e($v('starts_on')) ?>"<?= $invalid('starts_on') ?>>
-                <?= $fieldErrors('starts_on') ?>
-            </div>
-            <div class="lt-field">
-                <label for="ends_on"><?= e(__('delegation.fields.ends_on')) ?> *</label>
-                <input type="date" id="ends_on" name="ends_on" required min="<?= e($today) ?>" value="<?= e($v('ends_on')) ?>"<?= $invalid('ends_on') ?>>
-                <?= $fieldErrors('ends_on') ?>
-            </div>
-            <div class="lt-field">
-                <label for="reason"><?= e(__('delegation.fields.reason')) ?></label>
-                <input type="text" id="reason" name="reason" maxlength="255" value="<?= e($v('reason')) ?>"<?= $invalid('reason') ?>>
-                <?= $fieldErrors('reason') ?>
-            </div>
-            <button type="submit"><i data-lucide="calendar-plus"></i><?= e(__('delegation.save')) ?></button>
         </form>
     </section>
 </div>

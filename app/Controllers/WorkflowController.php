@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Controllers\Concerns\HandlesDomain;
+use App\Core\BulkRequest;
 use App\Core\HttpException;
 use App\Core\Request;
 use App\Core\Response;
@@ -13,6 +14,7 @@ use App\Core\Translator;
 use App\Core\Url;
 use App\Core\ValidationException;
 use App\Core\Validator;
+use App\Domain\AccessDeniedException;
 use App\Domain\Assignment\AssignmentRequest;
 use App\Domain\Assignment\AssignmentRole;
 use App\Domain\Mail\MailAction;
@@ -88,6 +90,58 @@ final class WorkflowController
             $this->workflow->linkReplyByReference($this->actor($request), $this->routeId($request), $data['reference']);
             return $this->translator->get('link.linked', ['reference' => strtoupper($data['reference'])]);
         });
+    }
+
+    /** POST /mails/bulk/assign (JSON): assigns the mails selected in the list. */
+    public function bulkAssign(Request $request): Response
+    {
+        $ids = $this->bulkIds($request);
+        $comment = self::nullIfEmpty($this->validator->validate($request->all(), ['comment' => 'nullable|string|max:1000'])['comment']);
+        $assignment = $this->assignmentRequest($request, false);
+        if ($assignment->userId === null && $assignment->departmentId === null) {
+            // Refused once, in the dialog, rather than once per selected mail.
+            throw new ValidationException(['user_id' => [$this->translator->get('rules.assignment.target_required')]]);
+        }
+        try {
+            $result = $this->workflow->assignMany($this->actor($request), $ids, $assignment, $comment);
+        } catch (RuleViolation $e) {
+            throw new ValidationException($this->violationMessages($e));
+        }
+        return $this->bulkResponse($result);
+    }
+
+    /** POST /mails/bulk/close (JSON): closes the mails selected in the list. */
+    public function bulkClose(Request $request): Response
+    {
+        $ids = $this->bulkIds($request);
+        $comment = self::nullIfEmpty($this->validator->validate($request->all(), ['comment' => 'nullable|string|max:1000'])['comment']);
+        return $this->bulkResponse($this->workflow->performMany($this->actor($request), $ids, MailAction::Close, $comment));
+    }
+
+    /** @return list<int> */
+    private function bulkIds(Request $request): array
+    {
+        $ids = BulkRequest::ids($request->input('ids'));
+        if ($ids === []) {
+            throw new ValidationException(['ids' => [$this->translator->get('bulk.none_selected')]]);
+        }
+        return $ids;
+    }
+
+    /**
+     * @param array{done: list<int>, failed: array<int, \Throwable>} $result
+     */
+    private function bulkResponse(array $result): Response
+    {
+        $failed = [];
+        foreach ($result['failed'] as $mailId => $error) {
+            $failed[] = ['id' => $mailId, 'message' => match (true) {
+                $error instanceof RuleViolation => implode(' ', array_merge(...array_values($this->violationMessages($error)))),
+                $error instanceof AccessDeniedException => $this->translator->get('bulk.forbidden'),
+                default => $this->translator->get('bulk.not_found'),
+            }];
+        }
+        return Response::json(['done' => $result['done'], 'failed' => $failed]);
     }
 
     /** @param \Closure(): string $work returns the success message */

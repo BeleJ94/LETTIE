@@ -1,153 +1,70 @@
 <?php
 /**
+ * @floorplan ObjectPage
+ *
+ * New mail: Object Page in creation mode (fields shared with the edit mode of mails/show.php).
+ *
  * @var App\Core\View $this
  * @var App\Domain\Mail\Direction $direction
- * @var ?App\Domain\Mail\Mail $mail
  * @var ?App\Domain\Mail\Mail $replyTo incoming mail this outgoing mail answers
  * @var array<string, mixed> $values
  * @var array<string, list<string>> $errors
  * @var string $correspondentLabel
  * @var list<array{id: int, site_id: int, name: string}> $departments
  */
-use App\Domain\Mail\Channel;
-use App\Domain\Mail\Confidentiality;
+use App\Core\Ui5;
 use App\Domain\Mail\Direction;
-use App\Domain\Mail\Priority;
 
 $this->layout('layouts/main');
-$isIncoming = $direction === Direction::Incoming;
-$title = $mail !== null ? __('mail.edit', ['reference' => $mail->reference]) : __($isIncoming ? 'mail.new_incoming' : 'mail.new_outgoing');
-$v = static fn (string $key): string => is_scalar($values[$key] ?? null) ? (string) $values[$key] : '';
-$invalid = static fn (string $key): string => isset($errors[$key]) ? ' aria-invalid="true" aria-describedby="' . e($key) . '-error"' : '';
-$fieldErrors = fn (string $key): string => isset($errors[$key]) ? $this->partial('partials/field-errors', ['field' => $key, 'messages' => $errors[$key]]) : '';
-$select = static function (string $name, array $cases, string $enum, string $current): string {
-    $html = '';
-    foreach ($cases as $case) {
-        $html .= '<option value="' . e($case->value) . '"' . ($case->value === $current ? ' selected' : '') . '>'
-            . e(__('enums.' . $enum . '.' . $case->value)) . '</option>';
-    }
-    return $html;
-};
+$title = __($direction === Direction::Incoming ? 'mail.new_incoming' : 'mail.new_outgoing');
+$fieldLabels = [];
+foreach (['subject', 'correspondent_id', 'received_at', 'sent_at', 'document_date', 'due_date', 'channel', 'department_id', 'priority', 'confidentiality', 'external_reference', 'summary'] as $field) {
+    $fieldLabels[$field] = __('mail.fields.' . $field);
+}
 ?>
 <?php $this->start('title') ?><?= e($title) ?><?php $this->stop() ?>
-
-<div class="lt-page-header">
-    <h1><?= e($title) ?></h1>
-</div>
-
-<?php if ($errors !== []): ?>
-    <div class="lt-alert lt-alert--error" role="alert"><?= e(__('js.errors.validation')) ?></div>
-<?php endif; ?>
-
-<form method="post" class="lt-card lt-form lt-form--grid" novalidate
-      action="<?= e($basePath) ?><?= $mail !== null ? '/mails/' . e($mail->id) : '/mails' ?>">
-    <?= $csrf->field() ?>
-    <?php if ($mail !== null): ?>
-        <input type="hidden" name="_method" value="PUT">
-    <?php else: ?>
-        <input type="hidden" name="direction" value="<?= e($direction->value) ?>">
-        <?php if ($replyTo !== null): ?>
-            <input type="hidden" name="reply_to" value="<?= e($replyTo->id) ?>">
-            <div class="lt-alert lt-alert--info lt-span-2">
-                <?= e(__('link.replying_to', ['reference' => $replyTo->reference, 'subject' => $replyTo->subject])) ?>
-            </div>
-        <?php endif; ?>
-        <p class="lt-field__help lt-span-2"><?= e(__('mail.reference_auto')) ?></p>
-    <?php endif; ?>
-
-    <div class="lt-field lt-span-2">
-        <label for="subject"><?= e(__('mail.fields.subject')) ?> *</label>
-        <input type="text" id="subject" name="subject" maxlength="255" required value="<?= e($v('subject')) ?>"<?= $invalid('subject') ?>>
-        <?= $fieldErrors('subject') ?>
-    </div>
-
-    <div class="lt-field lt-span-2" data-lt-picker data-url="/correspondents/search">
-        <label for="correspondent"><?= e(__('mail.fields.correspondent_id')) ?> *</label>
-        <input type="hidden" name="correspondent_id" value="<?= e($v('correspondent_id')) ?>" data-lt-picker-value>
-        <input type="search" id="correspondent" autocomplete="off" value="<?= e($correspondentLabel) ?>"
-               placeholder="<?= e(__('mail.correspondent_search')) ?>" data-lt-picker-input
-               aria-autocomplete="list" aria-controls="correspondent-results"<?= $invalid('correspondent_id') ?>>
-        <ul id="correspondent-results" class="lt-picker__results" data-lt-picker-results hidden></ul>
-        <?= $fieldErrors('correspondent_id') ?>
-        <a class="lt-field__help" href="<?= e($basePath) ?>/correspondents/new" target="_blank" rel="noopener"><?= e(__('mail.correspondent_new')) ?></a>
-    </div>
-
-    <?php if ($isIncoming): ?>
-        <div class="lt-field">
-            <label for="received_at"><?= e(__('mail.fields.received_at')) ?> *</label>
-            <input type="datetime-local" id="received_at" name="received_at" required value="<?= e($v('received_at')) ?>"<?= $invalid('received_at') ?>>
-            <?= $fieldErrors('received_at') ?>
-        </div>
-    <?php else: ?>
-        <div class="lt-field">
-            <label for="sent_at"><?= e(__('mail.fields.sent_at')) ?></label>
-            <input type="datetime-local" id="sent_at" name="sent_at" value="<?= e($v('sent_at')) ?>"<?= $invalid('sent_at') ?>>
-            <?= $fieldErrors('sent_at') ?>
-        </div>
-    <?php endif; ?>
-
-    <div class="lt-field">
-        <label for="document_date"><?= e(__('mail.fields.document_date')) ?></label>
-        <input type="date" id="document_date" name="document_date" value="<?= e($v('document_date')) ?>"<?= $invalid('document_date') ?>>
-        <?= $fieldErrors('document_date') ?>
-    </div>
-
-    <div class="lt-field">
-        <label for="channel"><?= e(__('mail.fields.channel')) ?> *</label>
-        <select id="channel" name="channel"<?= $invalid('channel') ?>><?= $select('channel', Channel::cases(), 'channel', $v('channel')) ?></select>
-        <?= $fieldErrors('channel') ?>
-    </div>
-
-    <div class="lt-field">
-        <label for="department_id"><?= e(__('mail.fields.department_id')) ?></label>
-        <select id="department_id" name="department_id"<?= $invalid('department_id') ?>>
-            <option value=""><?= e(__('common.none')) ?></option>
-            <?php foreach ($departments as $department): ?>
-                <option value="<?= e($department['id']) ?>"<?= (string) $department['id'] === $v('department_id') ? ' selected' : '' ?>><?= e($department['name']) ?></option>
-            <?php endforeach; ?>
-        </select>
-        <?= $fieldErrors('department_id') ?>
-    </div>
-
-    <div class="lt-field">
-        <label for="priority"><?= e(__('mail.fields.priority')) ?> *</label>
-        <select id="priority" name="priority"<?= $invalid('priority') ?>><?= $select('priority', Priority::cases(), 'priority', $v('priority')) ?></select>
-        <?= $fieldErrors('priority') ?>
-    </div>
-
-    <div class="lt-field">
-        <label for="confidentiality"><?= e(__('mail.fields.confidentiality')) ?> *</label>
-        <select id="confidentiality" name="confidentiality"<?= $invalid('confidentiality') ?>><?= $select('confidentiality', Confidentiality::cases(), 'confidentiality', $v('confidentiality')) ?></select>
-        <?= $fieldErrors('confidentiality') ?>
-    </div>
-
-    <div class="lt-field">
-        <label for="due_date"><?= e(__('mail.fields.due_date')) ?></label>
-        <input type="date" id="due_date" name="due_date" value="<?= e($v('due_date')) ?>"<?= $invalid('due_date') ?> aria-describedby="due_date-help">
-        <?php if ($mail === null && $isIncoming): ?>
-            <span class="lt-field__help" id="due_date-help"><?= e(__('deadline.default_help', App\Domain\Deadline\DueDatePolicy::DEFAULT_WORKING_DAYS)) ?></span>
-        <?php endif; ?>
-        <?= $fieldErrors('due_date') ?>
-    </div>
-
-    <div class="lt-field">
-        <label for="external_reference"><?= e(__('mail.fields.external_reference')) ?></label>
-        <input type="text" id="external_reference" name="external_reference" maxlength="100" value="<?= e($v('external_reference')) ?>"<?= $invalid('external_reference') ?>>
-        <?= $fieldErrors('external_reference') ?>
-    </div>
-
-    <div class="lt-field lt-span-2">
-        <label for="summary"><?= e(__('mail.fields.summary')) ?></label>
-        <textarea id="summary" name="summary" maxlength="5000" rows="5"<?= $invalid('summary') ?>><?= e($v('summary')) ?></textarea>
-        <?= $fieldErrors('summary') ?>
-    </div>
-
-    <div class="lt-form__actions lt-span-2">
-        <a class="lt-btn lt-btn--ghost" href="<?= e($basePath) ?><?= $mail !== null ? '/mails/' . e($mail->id) : '/mails' ?>"><?= e(__('common.cancel')) ?></a>
-        <button type="submit"><i data-lucide="save"></i><?= e(__('common.save')) ?></button>
-    </div>
-</form>
-
+<?php $this->start('main_class') ?>lt-main--page<?php $this->stop() ?>
 <?php $this->start('scripts') ?>
-<script src="<?= e($basePath) ?>/assets/js/pages/correspondent-picker.js"></script>
+<script src="<?= e($basePath) ?>/assets/js/pages/object-page.js"></script>
 <?php $this->stop() ?>
+
+<ui5-dynamic-page id="mail-page" class="lt-object-page" data-lt-object-page data-editing show-footer>
+    <ui5-dynamic-page-title slot="titleArea">
+        <ui5-breadcrumbs slot="breadcrumbs" accessible-name="<?= e(__('mail.title')) ?>">
+            <ui5-breadcrumbs-item href="<?= e($basePath) ?>/mails"><?= e(__('mail.title')) ?></ui5-breadcrumbs-item>
+            <?php if ($replyTo !== null): ?>
+                <ui5-breadcrumbs-item href="<?= e($basePath) ?>/mails/<?= e($replyTo->id) ?>"><?= e($replyTo->reference) ?></ui5-breadcrumbs-item>
+            <?php endif; ?>
+            <ui5-breadcrumbs-item><?= e(__('object.creating')) ?></ui5-breadcrumbs-item>
+        </ui5-breadcrumbs>
+        <ui5-title slot="heading" level="H1" size="H3" wrapping-type="Normal"><?= e($title) ?></ui5-title>
+        <div slot="subheading" class="lt-tags"><?= Ui5::tag('direction', $direction->value) ?></div>
+    </ui5-dynamic-page-title>
+
+    <div class="lt-object-page__content">
+        <?php if ($replyTo !== null): ?>
+            <ui5-message-strip design="Information" hide-close-button class="lt-op-strip"><?= e(__('link.replying_to', ['reference' => $replyTo->reference, 'subject' => $replyTo->subject])) ?></ui5-message-strip>
+        <?php endif; ?>
+        <section class="lt-op-section" id="general" aria-labelledby="general-title">
+            <ui5-title level="H2" size="H4" id="general-title"><?= e(__('object.general')) ?></ui5-title>
+            <ui5-label wrapping-type="Normal"><?= e(__('mail.reference_auto')) ?></ui5-label>
+            <form id="mail-form" method="post" action="<?= e($basePath) ?>/mails" novalidate>
+                <?= $csrf->field() ?>
+                <input type="hidden" name="direction" value="<?= e($direction->value) ?>">
+                <?php if ($replyTo !== null): ?>
+                    <input type="hidden" name="reply_to" value="<?= e($replyTo->id) ?>">
+                <?php endif; ?>
+                <?= $this->partial('mails/_fields', [
+                    'direction' => $direction, 'values' => $values, 'errors' => $errors,
+                    'correspondentLabel' => $correspondentLabel, 'departments' => $departments, 'isNew' => true,
+                ]) ?>
+            </form>
+        </section>
+    </div>
+
+    <ui5-bar slot="footerArea" design="FloatingFooter" accessible-name="<?= e(__('object.footer')) ?>">
+        <?= $this->partial('partials/object-page/messages', ['errors' => $errors, 'labels' => $fieldLabels]) ?>
+        <ui5-button slot="endContent" design="Emphasized" data-lt-submit="mail-form"><?= e(__('common.save')) ?></ui5-button>
+        <ui5-button slot="endContent" design="Transparent" data-lt-href="<?= $replyTo !== null ? '/mails/' . e($replyTo->id) : '/mails' ?>"><?= e(__('common.cancel')) ?></ui5-button>
+    </ui5-bar>
+</ui5-dynamic-page>

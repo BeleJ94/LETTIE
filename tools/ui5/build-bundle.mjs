@@ -37,11 +37,6 @@ const entry = [
     `import { boot } from '@ui5/webcomponents-base/dist/Boot.js';`,
     `import { getTheme, setTheme } from '@ui5/webcomponents-base/dist/config/Theme.js';`,
     `import { getLanguage, setLanguage } from '@ui5/webcomponents-base/dist/config/Language.js';`,
-    // CLDR loaders registered last, so that UI5's built-in "en" loader (which fetches from
-    // jsDelivr, blocked by the CSP) can never win, whatever the module evaluation order.
-    `import { registerLocaleDataLoader } from '@ui5/webcomponents-base/dist/asset-registries/LocaleData.js';`,
-    ...LOCALES.map((l) => `registerLocaleDataLoader(${JSON.stringify(l)}, async () => (await import('@ui5/webcomponents-localization/dist/generated/assets/cldr/${l}.json')).default);`),
-    `setLanguage(document.documentElement.getAttribute('lang') || 'fr');`,
     `const api = { getTheme, setTheme, getLanguage, setLanguage, themes: ${JSON.stringify(THEMES)} };`,
     `window.LT_UI5 = api;`,
     // Explicit boot: applies the theme variables (--sap*) even on pages without any UI5 component.
@@ -79,7 +74,7 @@ const result = await build({
     outdir: outDir,
     entryNames: 'ui5',
     chunkNames: 'chunks/[name]-[hash]',
-    minify: true,
+    minify: process.env.UI5_DEBUG ? false : true,
     target: 'es2022',
     legalComments: 'none',
     metafile: true,

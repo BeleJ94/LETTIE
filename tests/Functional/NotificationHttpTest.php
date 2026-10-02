@@ -83,13 +83,58 @@ final class NotificationHttpTest extends TestCase
     {
         $id = $this->overdueMailForAgent();
 
-        $agentHome = $this->get($this->agent, '/')->body();
-        self::assertStringContainsString('Mes échéances', $agentHome);
-        self::assertStringContainsString('lt-stat--overdue is-set', $agentHome);
-        self::assertStringContainsString("/mails/{$id}", $agentHome);
-        self::assertStringNotContainsString('Toutes les échéances', $agentHome, 'agents only see their own');
+        // Launchpad: tiles by role, exceptions first, with their semantic state.
+        $tiles = static function (string $html): array {
+            preg_match_all('/data-tile="([a-z_]+)" data-state="([A-Za-z]+)"/', $html, $m);
+            return array_combine($m[1], $m[2]);
+        };
 
-        self::assertStringContainsString('Toutes les échéances', $this->get($this->secretary, '/')->body());
+        $agentHome = $this->get($this->agent, '/')->body();
+        $agentTiles = $tiles($agentHome);
+        self::assertSame('my_overdue', array_key_first($agentTiles), 'the overdue mail comes first');
+        self::assertSame('Negative', $agentTiles['my_overdue']);
+        self::assertStringContainsString('data-lt-href="/mails?mine=1&amp;overdue=1"', $agentHome);
+        self::assertStringContainsString('data-lt-href="/mails/' . $id . '"', $agentHome, 'upcoming deadlines list');
+        foreach (['to_assign', 'scope_overdue', 'new_incoming', 'correspondents', 'processing', 'retention'] as $hidden) {
+            self::assertArrayNotHasKey($hidden, $agentTiles, "agents do not see the {$hidden} tile");
+        }
+
+        $secretaryTiles = $tiles($this->get($this->secretary, '/')->body());
+        self::assertSame('scope_overdue', array_key_first($secretaryTiles));
+        self::assertSame('Negative', $secretaryTiles['scope_overdue']);
+        self::assertSame('None', $secretaryTiles['my_overdue'], 'the mail is assigned to the agent');
+        self::assertArrayHasKey('new_incoming', $secretaryTiles);
+        self::assertArrayHasKey('correspondents', $secretaryTiles);
+        self::assertArrayNotHasKey('processing', $secretaryTiles, 'no reports.view');
+        self::assertArrayNotHasKey('retention', $secretaryTiles, 'no settings.manage');
+    }
+
+    public function testShellShowsTheProfileMenuSearchAndNavigationOfTheRole(): void
+    {
+        $home = $this->get($this->agent, '/')->body();
+        self::assertStringContainsString('<ui5-shellbar ', $home);
+        self::assertStringContainsString('<ui5-shellbar-search ', $home);
+        self::assertStringContainsString('show-notifications', $home);
+        self::assertStringContainsString('<ui5-user-menu ', $home);
+        self::assertStringContainsString($this->agent->email, $home);
+        self::assertStringContainsString('id="lt-logout-form"', $home);
+        self::assertMatchesRegularExpression('#<ui5-side-navigation-sub-item text="Tous les courriers"\s+href="/mails"#', $home);
+        self::assertStringNotContainsString('href="/correspondents"', $home, 'navigation is filtered by permission');
+        self::assertStringNotContainsString('href="/statistics"', $home);
+        self::assertStringNotContainsString('href="/retention-rules"', $home);
+
+        // Shortcuts and counters of the side navigation follow the permissions.
+        self::assertStringContainsString('href="/mails?mine=1&amp;overdue=1"', $home);
+        self::assertStringNotContainsString('data-count="unassigned"', $home, 'an agent does not assign');
+        self::assertStringNotContainsString('design="Action"', $home, 'an agent does not register mail');
+        self::assertSame(['mine_overdue'], array_keys(json_decode($this->get($this->agent, '/navigation/counts')->body(), true)));
+
+        $secretaryHome = $this->get($this->secretary, '/')->body();
+        self::assertMatchesRegularExpression('#<ui5-side-navigation-item text="Enregistrer un courrier"[^>]*href="/mails/new"[^>]*design="Action"#', $secretaryHome);
+        self::assertStringContainsString('data-count="unassigned"', $secretaryHome);
+        self::assertMatchesRegularExpression('#href="/delegations" slot="fixedItems"#', $secretaryHome, 'personal settings are pinned at the bottom');
+        self::assertStringNotContainsString('<ui5-side-navigation-item text="Notifications"', $secretaryHome, 'the bell is the only entry to the notifications');
+        self::assertSame(['mine_overdue', 'unassigned'], array_keys(json_decode($this->get($this->secretary, '/navigation/counts')->body(), true)));
     }
 
     public function testNotificationsListCountAndRead(): void

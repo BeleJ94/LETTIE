@@ -1,5 +1,11 @@
 <?php
 /**
+ * @floorplan ObjectPage
+ *
+ * Mail page: display by default, edit mode on /mails/{id}/edit (same page, general section editable).
+ * Behaviour in pages/object-page.js, configured by data-lt-* attributes
+ * (docs/FIORI_DESIGN.md, "Modèle Object Page").
+ *
  * @var App\Core\View $this
  * @var App\Domain\Mail\Mail $mail
  * @var ?App\Domain\Correspondent\Correspondent $correspondent
@@ -20,19 +26,30 @@
  * @var bool $canAnnotate
  * @var bool $canReply
  * @var bool $canLinkReply
+ * @var bool $editing
+ * @var array<string, mixed> $values
+ * @var array<string, list<string>> $errors
+ * @var string $correspondentLabel
  */
+use App\Core\Ui5;
 use App\Domain\Assignment\AssignmentRole;
 use App\Domain\Attachment\AttachmentPolicy;
+use App\Domain\Deadline\DueStatus;
 use App\Domain\Mail\Direction;
 use App\Domain\Mail\MailAction;
 
-/** Confirmation settings per action (null: no confirmation). */
+$this->layout('layouts/main');
+$url = $basePath . '/mails/' . $mail->id;
+
+/** Confirmation per workflow action (none: the action is immediate). */
 $confirm = [
-    'close' => ['message' => __('workflow.confirm.close'), 'input' => true],
-    'reopen' => ['message' => __('workflow.confirm.reopen'), 'input' => true],
-    'archive' => ['message' => __('workflow.confirm.archive'), 'danger' => true],
+    'close' => ['message' => __('workflow.confirm.close'), 'input' => __('workflow.comment')],
+    'reopen' => ['message' => __('workflow.confirm.reopen'), 'input' => __('workflow.comment')],
+    'archive' => ['message' => __('workflow.confirm.archive'), 'state' => 'Negative'],
 ];
-$icons = ['start' => 'play', 'await_reply' => 'hourglass', 'close' => 'check-circle', 'reopen' => 'rotate-ccw', 'archive' => 'archive'];
+$actionIcons = ['start' => 'begin', 'await_reply' => 'pending', 'close' => 'accept', 'reopen' => 'undo', 'archive' => 'folder-full'];
+$footerActions = array_values(array_filter($actions, static fn (MailAction $a): bool => $a !== MailAction::Assign && $a !== MailAction::Reassign));
+
 $activeForAction = null;
 foreach ($assignments as $a) {
     if ($a->isActive() && $a->role === AssignmentRole::ForAction) {
@@ -40,345 +57,419 @@ foreach ($assignments as $a) {
         break;
     }
 }
-$userOptions = static function (array $users): string {
-    $html = '<option value="">—</option>';
-    foreach ($users as $u) {
-        $html .= '<option value="' . e($u['id']) . '">' . e($u['name']) . ' (' . e(__('roles.' . $u['role'])) . ')</option>';
+$canAssignNow = !$editing && $canAssign && in_array(MailAction::Assign, $actions, true);
+$canReassignNow = !$editing && $canAssign && $activeForAction !== null && in_array(MailAction::Reassign, $actions, true);
+$userOptions = ['' => __('list.mails.none')];
+foreach ($assignableUsers as $u) {
+    $userOptions[$u['id']] = $u['name'] . ' — ' . __('roles.' . $u['role']);
+}
+$departmentOptions = ['' => __('list.mails.none')] + array_column($departments, 'name', 'id');
+$roleOptions = [];
+foreach (AssignmentRole::cases() as $role) {
+    if (!($role === AssignmentRole::ForAction && $activeForAction !== null)) {
+        $roleOptions[$role->value] = __('enums.assignment_role.' . $role->value);
     }
-    return $html;
-};
-$departmentOptions = static function (array $departments): string {
-    $html = '<option value="">—</option>';
-    foreach ($departments as $d) {
-        $html .= '<option value="' . e($d['id']) . '">' . e($d['name']) . '</option>';
-    }
-    return $html;
-};
-
-$this->layout('layouts/main');
-$badge = static fn (string $enum, string $value): string =>
-    '<span class="lt-badge lt-badge--' . e($value) . '">' . e(__("enums.{$enum}.{$value}")) . '</span>';
-$size = static function (int $bytes) use ($locale): string {
-    $units = $locale === 'en' ? ['B', 'KB', 'MB', 'GB'] : ['o', 'Ko', 'Mo', 'Go'];
-    $i = 0;
-    $n = (float) $bytes;
-    while ($n >= 1024 && $i < 3) {
-        $n /= 1024;
-        $i++;
-    }
-    return number_format($n, $i === 0 ? 0 : 1, ',', ' ') . ' ' . $units[$i];
-};
+}
+$due = $mail->dueStatus($today);
+$fieldLabels = [];
+foreach (['subject', 'correspondent_id', 'received_at', 'sent_at', 'document_date', 'due_date', 'channel', 'department_id', 'priority', 'confidentiality', 'external_reference', 'summary'] as $field) {
+    $fieldLabels[$field] = __('mail.fields.' . $field);
+}
+$sections = [
+    'general' => __('object.general'),
+    'assignments' => __('assignment.title'),
+    'annotations' => __('annotation.title'),
+    'attachments' => __('attachment.title'),
+    'links' => __('link.title'),
+    'history' => __('mail.history'),
+];
+$counts = ['assignments' => count($assignments), 'annotations' => count($annotations), 'attachments' => count($attachments), 'links' => count($links)];
+$readItem = static fn (string $label, string $value): string =>
+    '<ui5-form-item><ui5-label slot="labelContent" show-colon>' . e($label) . '</ui5-label><ui5-text>' . e($value !== '' ? $value : '—') . '</ui5-text></ui5-form-item>';
 ?>
 <?php $this->start('title') ?><?= e($mail->reference) ?><?php $this->stop() ?>
+<?php $this->start('main_class') ?>lt-main--page<?php $this->stop() ?>
+<?php $this->start('scripts') ?>
+<script src="<?= e($basePath) ?>/assets/js/pages/object-page.js"></script>
+<?php $this->stop() ?>
 
-<div class="lt-page-header">
-    <div>
-        <h1><?= e($mail->reference) ?> — <?= e($mail->subject) ?></h1>
-        <p class="lt-muted">
-            <?= $badge('direction', $mail->direction->value) ?>
-            <?= $badge('status', $mail->status->value) ?>
-            <?= $badge('priority', $mail->priority->value) ?>
-            <?php $due = $mail->dueStatus($today); ?>
-            <?php if ($due !== App\Domain\Deadline\DueStatus::None && $due !== App\Domain\Deadline\DueStatus::Ok): ?>
-                <span class="lt-due lt-due--<?= e($due->value) ?>"><?= e(__('deadline.status.' . $due->value, ['date' => local_date($mail->dueDate)])) ?></span>
-            <?php endif; ?>
-        </p>
-    </div>
-    <div class="lt-actions">
-        <a class="lt-btn lt-btn--ghost" href="<?= e($basePath) ?>/mails"><i data-lucide="arrow-left"></i><?= e(__('common.back')) ?></a>
-        <?php if ($canReply): ?>
-            <a class="lt-btn" href="<?= e($basePath) ?>/mails/new?reply_to=<?= e($mail->id) ?>"><i data-lucide="reply"></i><?= e(__('link.reply')) ?></a>
-        <?php endif; ?>
-        <a class="lt-btn" href="<?= e($basePath) ?>/mails/<?= e($mail->id) ?>/slip?print=1" target="_blank" rel="noopener"><i data-lucide="printer"></i><?= e(__('slip.button')) ?></a>
-        <?php if ($canUpdate): ?>
-            <a class="lt-btn lt-btn--primary" href="<?= e($basePath) ?>/mails/<?= e($mail->id) ?>/edit"><i data-lucide="pencil"></i><?= e(__('common.edit')) ?></a>
-        <?php endif; ?>
-    </div>
-</div>
+<ui5-dynamic-page id="mail-page" class="lt-object-page" data-lt-object-page <?= $editing ? 'data-editing' : '' ?>
+    <?= ($editing || $footerActions !== []) ? 'show-footer' : '' ?>>
 
-<?php if ($actions !== []): ?>
-    <section class="lt-card lt-workflow" id="workflow" aria-label="<?= e(__('workflow.title')) ?>">
-        <?php foreach ($actions as $action): ?>
-            <?php if ($action === MailAction::Assign || $action === MailAction::Reassign) continue; ?>
-            <?php $c = $confirm[$action->value] ?? null; ?>
-            <form method="post" class="lt-inline-form" action="<?= e($basePath) ?>/mails/<?= e($mail->id) ?>/actions/<?= e($action->value) ?>"
-                <?php if ($c !== null): ?>
-                    data-lt-confirm="<?= e($c['message']) ?>"
-                    data-lt-confirm-title="<?= e(__('enums.action.' . $action->value)) ?>"
-                    data-lt-confirm-button="<?= e(__('enums.action.' . $action->value)) ?>"
-                    <?= !empty($c['danger']) ? 'data-lt-confirm-danger' : '' ?>
-                    <?php if (!empty($c['input'])): ?>
-                        data-lt-confirm-input="comment" data-lt-confirm-input-label="<?= e(__('workflow.comment')) ?>"
-                    <?php endif; ?>
-                <?php endif; ?>>
-                <?= $csrf->field() ?>
-                <button type="submit" class="lt-btn<?= $action === MailAction::Archive ? ' lt-btn--danger' : '' ?>"><i data-lucide="<?= e($icons[$action->value] ?? 'circle') ?>"></i><?= e(__('enums.action.' . $action->value)) ?></button>
-            </form>
-        <?php endforeach; ?>
-    </section>
-<?php endif; ?>
-
-<div class="lt-columns">
-    <section class="lt-card" aria-labelledby="details-title">
-        <h2 id="details-title"><?= e(__('mail.details')) ?></h2>
-        <dl class="lt-dl">
-            <dt><?= e(__('mail.fields.correspondent_id')) ?></dt>
-            <dd><?= e($correspondent?->displayName() ?? '—') ?></dd>
-            <?php if ($mail->direction === Direction::Incoming): ?>
-                <dt><?= e(__('mail.fields.received_at')) ?></dt>
-                <dd><?= e(local_datetime($mail->receivedAt)) ?></dd>
+    <ui5-dynamic-page-title slot="titleArea">
+        <ui5-breadcrumbs slot="breadcrumbs" accessible-name="<?= e(__('mail.title')) ?>">
+            <ui5-breadcrumbs-item href="<?= e($basePath) ?>/mails"><?= e(__('mail.title')) ?></ui5-breadcrumbs-item>
+            <?php if ($editing): ?>
+                <ui5-breadcrumbs-item href="<?= e($url) ?>"><?= e($mail->reference) ?></ui5-breadcrumbs-item>
+                <ui5-breadcrumbs-item><?= e(__('object.editing')) ?></ui5-breadcrumbs-item>
             <?php else: ?>
-                <dt><?= e(__('mail.fields.sent_at')) ?></dt>
-                <dd><?= e(local_datetime($mail->sentAt) ?: '—') ?></dd>
+                <ui5-breadcrumbs-item><?= e($mail->reference) ?></ui5-breadcrumbs-item>
             <?php endif; ?>
-            <dt><?= e(__('mail.fields.document_date')) ?></dt>
-            <dd><?= e(local_date($mail->documentDate) ?: '—') ?></dd>
-            <dt><?= e(__('mail.fields.due_date')) ?></dt>
-            <dd><?= e(local_date($mail->dueDate) ?: '—') ?></dd>
-            <dt><?= e(__('mail.fields.channel')) ?></dt>
-            <dd><?= e(__('enums.channel.' . $mail->channel->value)) ?></dd>
-            <dt><?= e(__('mail.fields.department_id')) ?></dt>
-            <dd><?= e($departmentName ?? '—') ?></dd>
-            <dt><?= e(__('mail.fields.confidentiality')) ?></dt>
-            <dd><?= e(__('enums.confidentiality.' . $mail->confidentiality->value)) ?></dd>
-            <dt><?= e(__('mail.fields.external_reference')) ?></dt>
-            <dd><?= e($mail->externalReference ?? '—') ?></dd>
-            <dt><?= e(__('mail.fields.created')) ?></dt>
-            <dd><?= e(local_datetime($mail->createdAt)) ?></dd>
-        </dl>
-        <?php if ($mail->summary !== null): ?>
-            <h3><?= e(__('mail.fields.summary')) ?></h3>
-            <p class="lt-prewrap"><?= e($mail->summary) ?></p>
+        </ui5-breadcrumbs>
+        <ui5-title slot="heading" level="H1" size="H3" wrapping-type="Normal"><?= e($mail->reference) ?> — <?= e($mail->subject) ?></ui5-title>
+        <ui5-title slot="snappedHeading" level="H1" size="H5"><?= e($mail->reference) ?> — <?= e($mail->subject) ?></ui5-title>
+        <div slot="subheading" class="lt-tags">
+            <?= Ui5::tag('direction', $mail->direction->value) ?>
+            <?= Ui5::tag('status', $mail->status->value) ?>
+            <?= Ui5::tag('priority', $mail->priority->value) ?>
+        </div>
+        <div slot="snappedSubheading" class="lt-tags">
+            <?= Ui5::tag('status', $mail->status->value) ?>
+        </div>
+        <?php if (!$editing): ?>
+            <ui5-toolbar slot="actionsBar" design="Transparent" accessible-name="<?= e(__('object.title_actions')) ?>">
+                <?php if ($canUpdate): ?>
+                    <ui5-toolbar-button icon="edit" text="<?= e(__('common.edit')) ?>" data-lt-href="/mails/<?= e($mail->id) ?>/edit"></ui5-toolbar-button>
+                <?php endif; ?>
+                <?php if ($canReply): ?>
+                    <ui5-toolbar-button icon="response" text="<?= e(__('link.reply')) ?>" data-lt-href="/mails/new?reply_to=<?= e($mail->id) ?>"></ui5-toolbar-button>
+                <?php endif; ?>
+                <ui5-toolbar-button icon="print" text="<?= e(__('slip.button')) ?>" data-lt-open="/mails/<?= e($mail->id) ?>/slip?print=1"
+                                    tooltip="<?= e(__('object.open_slip')) ?>"></ui5-toolbar-button>
+            </ui5-toolbar>
         <?php endif; ?>
-    </section>
+    </ui5-dynamic-page-title>
 
-    <section class="lt-card" id="attachments" aria-labelledby="attachments-title">
-        <h2 id="attachments-title"><?= e(__('attachment.title')) ?></h2>
-        <?php if ($attachments === []): ?>
-            <p class="lt-muted"><?= e(__('attachment.none')) ?></p>
-        <?php else: ?>
-            <ul class="lt-files">
-                <?php foreach ($attachments as $file): ?>
-                    <li>
-                        <i data-lucide="<?= $file->mimeType === 'application/pdf' ? 'file-text' : 'image' ?>"></i>
-                        <span class="lt-files__name"><?= e($file->originalName) ?></span>
-                        <span class="lt-muted"><?= e($size($file->sizeBytes)) ?></span>
-                        <?php if ($file->isPurged()): ?>
-                            <span class="lt-muted" title="SHA-256 <?= e($file->sha256) ?>"><?= e(__('attachment.purged', ['date' => local_date($file->purgedAt?->format('Y-m-d'))])) ?></span>
-                        <?php else: ?>
-                            <?php if (AttachmentPolicy::isInline($file->mimeType)): ?>
-                                <a href="<?= e($basePath) ?>/attachments/<?= e($file->id) ?>?inline=1" target="_blank" rel="noopener"><?= e(__('attachment.view')) ?></a>
-                            <?php endif; ?>
-                            <a href="<?= e($basePath) ?>/attachments/<?= e($file->id) ?>"><?= e(__('attachment.download')) ?></a>
-                        <?php endif; ?>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
-
-        <?php if ($canUpdate): ?>
-            <form method="post" enctype="multipart/form-data" class="lt-form lt-upload"
-                  action="<?= e($basePath) ?>/mails/<?= e($mail->id) ?>/attachments">
-                <?= $csrf->field() ?>
-                <div class="lt-field">
-                    <label for="file"><?= e(__('attachment.file')) ?></label>
-                    <input type="file" id="file" name="file" accept="<?= e($accept) ?>" required aria-describedby="file-help">
-                    <span class="lt-field__help" id="file-help"><?= e(__('attachment.help', ['max' => $maxUploadMb])) ?></span>
-                </div>
-                <button type="submit"><i data-lucide="upload"></i><?= e(__('attachment.upload')) ?></button>
-            </form>
-        <?php endif; ?>
-    </section>
-</div>
-
-<div class="lt-columns">
-    <section class="lt-card" id="assignments" aria-labelledby="assignments-title">
-        <h2 id="assignments-title"><?= e(__('assignment.title')) ?></h2>
-        <?php if ($assignments === []): ?>
-            <p class="lt-muted"><?= e(__('assignment.none')) ?></p>
-        <?php else: ?>
-            <ul class="lt-list">
-                <?php foreach ($assignments as $a): ?>
-                    <li class="<?= $a->isActive() ? '' : 'lt-list__ended' ?>">
-                        <div>
-                            <strong><?= e($a->userName ?? $a->departmentName ?? '—') ?></strong>
-                            <?php if ($a->userName !== null && $a->departmentName !== null): ?><span class="lt-muted">· <?= e($a->departmentName) ?></span><?php endif; ?>
-                            <span class="lt-badge lt-badge--<?= e($a->role->value) ?>"><?= e(__('enums.assignment_role.' . $a->role->value)) ?></span>
-                            <?php if (!$a->isActive()): ?><span class="lt-badge"><?= e(__('enums.assignment_status.' . $a->status->value)) ?></span><?php endif; ?>
-                        </div>
-                        <?php if ($a->delegatedFromName !== null): ?>
-                            <div class="lt-muted"><i data-lucide="user-round-check"></i> <?= e(__('assignment.delegated_from', ['name' => $a->delegatedFromName])) ?></div>
-                        <?php endif; ?>
-                        <?php if ($a->instructions !== null): ?><p class="lt-prewrap"><?= e($a->instructions) ?></p><?php endif; ?>
-                        <div class="lt-muted">
-                            <?= e(__('assignment.by', ['name' => $a->assignedByName ?? '—', 'date' => local_datetime($a->createdAt)])) ?>
-                            <?php if ($a->dueDate !== null): ?> · <?= e(__('mail.fields.due_date')) ?> <?= e(local_date($a->dueDate)) ?><?php endif; ?>
-                        </div>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
-
-        <?php if ($canAssign && in_array(MailAction::Assign, $actions, true)): ?>
-            <details class="lt-details"<?= $assignments === [] ? ' open' : '' ?>>
-                <summary><?= e(__('assignment.assign')) ?></summary>
-                <form method="post" class="lt-form" action="<?= e($basePath) ?>/mails/<?= e($mail->id) ?>/assign">
-                    <?= $csrf->field() ?>
-                    <div class="lt-field">
-                        <label for="as-user"><?= e(__('assignment.fields.user_id')) ?></label>
-                        <select id="as-user" name="user_id"><?= $userOptions($assignableUsers) ?></select>
-                    </div>
-                    <?php if ($departments !== []): ?>
-                        <div class="lt-field">
-                            <label for="as-dept"><?= e(__('assignment.fields.department_id')) ?></label>
-                            <select id="as-dept" name="department_id"><?= $departmentOptions($departments) ?></select>
-                        </div>
+    <ui5-dynamic-page-header slot="headerArea" accessible-name="<?= e(__('object.kpis')) ?>">
+        <div class="lt-kpis">
+            <div class="lt-kpi" data-kpi="due">
+                <ui5-label><?= e(__('mail.fields.due_date')) ?></ui5-label>
+                <?php if ($mail->dueDate === null): ?>
+                    <ui5-title level="H2" size="H5"><?= e(__('object.no_due_date')) ?></ui5-title>
+                <?php else: ?>
+                    <ui5-title level="H2" size="H5"><?= e(local_date($mail->dueDate)) ?></ui5-title>
+                    <?php if (isset(Ui5::DUE_DESIGNS[$due->value])): ?>
+                        <ui5-tag design="<?= e(Ui5::DUE_DESIGNS[$due->value]) ?>"><?= e(__('deadline.status.' . $due->value, ['date' => local_date($mail->dueDate)])) ?></ui5-tag>
                     <?php endif; ?>
-                    <div class="lt-field">
-                        <label for="as-role"><?= e(__('assignment.fields.role')) ?></label>
-                        <select id="as-role" name="role">
-                            <?php foreach (AssignmentRole::cases() as $role): ?>
-                                <?php if ($role === AssignmentRole::ForAction && $activeForAction !== null) continue; ?>
-                                <option value="<?= e($role->value) ?>"><?= e(__('enums.assignment_role.' . $role->value)) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="lt-field">
-                        <label for="as-due"><?= e(__('assignment.fields.due_date')) ?></label>
-                        <input type="date" id="as-due" name="due_date" min="<?= e($today) ?>" value="<?= e($mail->dueDate ?? '') ?>">
-                    </div>
-                    <div class="lt-field">
-                        <label for="as-instr"><?= e(__('assignment.fields.instructions')) ?></label>
-                        <textarea id="as-instr" name="instructions" rows="2" maxlength="2000"></textarea>
-                    </div>
-                    <button type="submit"><i data-lucide="user-plus"></i><?= e(__('assignment.assign')) ?></button>
-                </form>
-            </details>
-        <?php endif; ?>
-
-        <?php if ($canAssign && $activeForAction !== null && in_array(MailAction::Reassign, $actions, true)): ?>
-            <details class="lt-details">
-                <summary><?= e(__('assignment.reassign')) ?></summary>
-                <form method="post" class="lt-form" action="<?= e($basePath) ?>/mails/<?= e($mail->id) ?>/reassign"
-                      data-lt-confirm="<?= e(__('workflow.confirm.reassign', ['name' => $activeForAction->userName ?? $activeForAction->departmentName ?? ''])) ?>"
-                      data-lt-confirm-title="<?= e(__('assignment.reassign')) ?>"
-                      data-lt-confirm-button="<?= e(__('assignment.reassign')) ?>"
-                      data-lt-confirm-input="comment" data-lt-confirm-input-label="<?= e(__('workflow.reason')) ?>">
-                    <?= $csrf->field() ?>
-                    <div class="lt-field">
-                        <label for="re-user"><?= e(__('assignment.fields.user_id')) ?></label>
-                        <select id="re-user" name="user_id"><?= $userOptions($assignableUsers) ?></select>
-                    </div>
-                    <?php if ($departments !== []): ?>
-                        <div class="lt-field">
-                            <label for="re-dept"><?= e(__('assignment.fields.department_id')) ?></label>
-                            <select id="re-dept" name="department_id"><?= $departmentOptions($departments) ?></select>
-                        </div>
-                    <?php endif; ?>
-                    <div class="lt-field">
-                        <label for="re-due"><?= e(__('assignment.fields.due_date')) ?></label>
-                        <input type="date" id="re-due" name="due_date" min="<?= e($today) ?>" value="<?= e($activeForAction->dueDate ?? '') ?>">
-                    </div>
-                    <div class="lt-field">
-                        <label for="re-instr"><?= e(__('assignment.fields.instructions')) ?></label>
-                        <textarea id="re-instr" name="instructions" rows="2" maxlength="2000"></textarea>
-                    </div>
-                    <button type="submit"><i data-lucide="repeat"></i><?= e(__('assignment.reassign')) ?></button>
-                </form>
-            </details>
-        <?php endif; ?>
-    </section>
-
-    <section class="lt-card" id="links" aria-labelledby="links-title">
-        <h2 id="links-title"><?= e(__('link.title')) ?></h2>
-        <?php if ($links === []): ?>
-            <p class="lt-muted"><?= e(__('link.none')) ?></p>
-        <?php else: ?>
-            <ul class="lt-list">
-                <?php foreach ($links as $link): ?>
-                    <li>
-                        <span class="lt-muted"><?= e(__('link.' . $link['type'] . '.' . $link['side'])) ?></span>
-                        <a href="<?= e($basePath) ?>/mails/<?= e($link['mail_id']) ?>"><?= e($link['reference']) ?></a>
-                        — <?= e($link['subject']) ?>
-                        <span class="lt-badge lt-badge--<?= e($link['status']) ?>"><?= e(__('enums.status.' . $link['status'])) ?></span>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        <?php endif; ?>
-        <?php if ($canLinkReply): ?>
-            <form method="post" class="lt-form lt-form--inline" action="<?= e($basePath) ?>/mails/<?= e($mail->id) ?>/reply-link"
-                  data-lt-confirm="<?= e(__('workflow.confirm.link_reply')) ?>"
-                  data-lt-confirm-title="<?= e(__('link.link_reply')) ?>"
-                  data-lt-confirm-button="<?= e(__('link.link_reply')) ?>">
-                <?= $csrf->field() ?>
-                <div class="lt-field">
-                    <label for="link-ref"><?= e(__('link.reference')) ?></label>
-                    <input type="text" id="link-ref" name="reference" maxlength="20" placeholder="ENT-<?= e(date('Y')) ?>-00001" required pattern="[Ee][Nn][Tt]-\d{4}-\d{5,}">
-                </div>
-                <button type="submit"><i data-lucide="link"></i><?= e(__('link.link_reply')) ?></button>
-            </form>
-        <?php endif; ?>
-    </section>
-</div>
-
-<section class="lt-card" id="annotations" aria-labelledby="annotations-title">
-    <h2 id="annotations-title"><?= e(__('annotation.title')) ?></h2>
-    <?php if ($annotations === []): ?>
-        <p class="lt-muted"><?= e(__('annotation.none')) ?></p>
-    <?php else: ?>
-        <ol class="lt-notes">
-            <?php foreach ($annotations as $note): ?>
-                <li class="<?= $note->isPrivate ? 'lt-notes__private' : '' ?>">
-                    <div class="lt-timeline__head">
-                        <strong><?= e($note->userName) ?></strong>
-                        <span class="lt-muted"><?= e(local_datetime($note->createdAt)) ?></span>
-                        <?php if ($note->isPrivate): ?><span class="lt-badge"><i data-lucide="lock"></i> <?= e(__('annotation.private')) ?></span><?php endif; ?>
-                    </div>
-                    <p class="lt-prewrap"><?= e($note->body) ?></p>
-                </li>
-            <?php endforeach; ?>
-        </ol>
-    <?php endif; ?>
-    <?php if ($canAnnotate): ?>
-        <form method="post" class="lt-form" action="<?= e($basePath) ?>/mails/<?= e($mail->id) ?>/annotations">
-            <?= $csrf->field() ?>
-            <div class="lt-field">
-                <label for="note-body"><?= e(__('annotation.body')) ?></label>
-                <textarea id="note-body" name="body" rows="3" maxlength="5000" required></textarea>
+                <?php endif; ?>
             </div>
-            <label class="lt-check"><input type="checkbox" name="is_private" value="1"> <?= e(__('annotation.private_help')) ?></label>
-            <button type="submit"><i data-lucide="message-square-plus"></i><?= e(__('annotation.add')) ?></button>
-        </form>
-    <?php endif; ?>
-</section>
+            <div class="lt-kpi" data-kpi="owner">
+                <ui5-label><?= e(__('object.owner')) ?></ui5-label>
+                <ui5-title level="H2" size="H5"><?= e($activeForAction?->userName ?? $activeForAction?->departmentName ?? __('object.unassigned')) ?></ui5-title>
+                <?php if ($activeForAction === null && $mail->status === App\Domain\Mail\MailStatus::Registered && $mail->direction === Direction::Incoming): ?>
+                    <ui5-tag design="Critical"><?= e(__('launchpad.action_needed')) ?></ui5-tag>
+                <?php endif; ?>
+            </div>
+            <div class="lt-kpi" data-kpi="correspondent">
+                <ui5-label><?= e(__('mail.fields.correspondent_id')) ?></ui5-label>
+                <ui5-title level="H2" size="H5" wrapping-type="Normal"><?= e($correspondent?->displayName() ?? '—') ?></ui5-title>
+            </div>
+            <div class="lt-kpi" data-kpi="attachments">
+                <ui5-label><?= e(__('attachment.title')) ?></ui5-label>
+                <ui5-title level="H2" size="H5"><?= e(count($attachments)) ?></ui5-title>
+            </div>
+        </div>
+    </ui5-dynamic-page-header>
 
-<section class="lt-card" aria-labelledby="history-title">
-    <h2 id="history-title"><?= e(__('mail.history')) ?></h2>
-    <?php if ($history === []): ?>
-        <p class="lt-muted"><?= e(__('mail.history_empty')) ?></p>
-    <?php else: ?>
-        <ol class="lt-timeline">
-            <?php foreach (array_reverse($history) as $entry): ?>
-                <li>
-                    <div class="lt-timeline__head">
-                        <strong><?= e($entry['action']) ?></strong>
-                        <span class="lt-muted"><?= e($entry['user']) ?> · <?= e(local_datetime($entry['at'])) ?></span>
-                    </div>
-                    <?php if ($entry['changes'] !== []): ?>
-                        <table class="lt-table lt-table--compact">
-                            <tbody>
-                            <?php foreach ($entry['changes'] as $change): ?>
-                                <tr>
-                                    <th scope="row"><?= e($change['field']) ?></th>
-                                    <td><del><?= e($change['old']) ?></del></td>
-                                    <td><ins><?= e($change['new']) ?></ins></td>
-                                </tr>
-                            <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
-                </li>
+    <div class="lt-object-page__content">
+        <?php /* Anchor bar: one tab per section (the tabs have no content of their own). */ ?>
+        <ui5-tabcontainer class="lt-anchor-bar" collapsed data-lt-anchor-bar accessible-name="<?= e(__('object.sections')) ?>">
+            <?php foreach ($sections as $id => $label): ?>
+                <ui5-tab text="<?= e($label . (!empty($counts[$id]) ? ' (' . $counts[$id] . ')' : '')) ?>" data-target="<?= e($id) ?>"
+                    <?= $id === 'general' ? 'selected' : '' ?>></ui5-tab>
             <?php endforeach; ?>
-        </ol>
+        </ui5-tabcontainer>
+
+        <section class="lt-op-section" id="general" aria-labelledby="general-title">
+            <ui5-title level="H2" size="H4" id="general-title"><?= e($sections['general']) ?></ui5-title>
+            <?php if ($editing): ?>
+                <form id="mail-form" method="post" action="<?= e($url) ?>" novalidate>
+                    <?= $csrf->field() ?>
+                    <input type="hidden" name="_method" value="PUT">
+                    <?= $this->partial('mails/_fields', [
+                        'direction' => $mail->direction, 'values' => $values, 'errors' => $errors,
+                        'correspondentLabel' => $correspondentLabel, 'departments' => $departments, 'isNew' => false,
+                    ]) ?>
+                </form>
+            <?php else: ?>
+                <ui5-form layout="S1 M2 L3 XL4" label-span="S12 M12 L12 XL12" item-spacing="Normal" accessible-name="<?= e($sections['general']) ?>">
+                    <?= $readItem(__('mail.fields.correspondent_id'), $correspondent?->displayName() ?? '') ?>
+                    <?= $mail->direction === Direction::Incoming
+                        ? $readItem(__('mail.fields.received_at'), local_datetime($mail->receivedAt))
+                        : $readItem(__('mail.fields.sent_at'), local_datetime($mail->sentAt)) ?>
+                    <?= $readItem(__('mail.fields.document_date'), local_date($mail->documentDate)) ?>
+                    <?= $readItem(__('mail.fields.due_date'), local_date($mail->dueDate)) ?>
+                    <?= $readItem(__('mail.fields.channel'), __('enums.channel.' . $mail->channel->value)) ?>
+                    <?= $readItem(__('mail.fields.department_id'), $departmentName ?? '') ?>
+                    <?= $readItem(__('mail.fields.confidentiality'), __('enums.confidentiality.' . $mail->confidentiality->value)) ?>
+                    <?= $readItem(__('mail.fields.external_reference'), $mail->externalReference ?? '') ?>
+                    <?= $readItem(__('mail.fields.created'), local_datetime($mail->createdAt)) ?>
+                    <?php if ($mail->summary !== null): ?>
+                        <ui5-form-item column-span="4">
+                            <ui5-label slot="labelContent" show-colon><?= e(__('mail.fields.summary')) ?></ui5-label>
+                            <ui5-text class="lt-prewrap"><?= e($mail->summary) ?></ui5-text>
+                        </ui5-form-item>
+                    <?php endif; ?>
+                </ui5-form>
+            <?php endif; ?>
+        </section>
+
+        <section class="lt-op-section" id="assignments" aria-labelledby="assignments-title">
+            <div class="lt-op-section__header">
+                <ui5-title level="H2" size="H4" id="assignments-title"><?= e($sections['assignments']) ?></ui5-title>
+                <?php if ($canAssignNow): ?>
+                    <ui5-button design="Transparent" icon="employee" data-lt-open-dialog="dlg-assign"><?= e(__('assignment.assign')) ?></ui5-button>
+                <?php endif; ?>
+                <?php if ($canReassignNow): ?>
+                    <ui5-button design="Transparent" icon="synchronize" data-lt-open-dialog="dlg-reassign"><?= e(__('assignment.reassign')) ?></ui5-button>
+                <?php endif; ?>
+            </div>
+            <?php if ($assignments === []): ?>
+                <div class="lt-op-block lt-op-block--empty"><ui5-text><?= e(__('assignment.none')) ?></ui5-text></div>
+            <?php else: ?>
+                <div class="lt-op-block">
+                <ui5-list separators="Inner" accessible-name="<?= e($sections['assignments']) ?>">
+                    <?php foreach ($assignments as $a): ?>
+                        <ui5-li-custom>
+                            <div class="lt-item">
+                                <div class="lt-item__head">
+                                    <ui5-title level="H3" size="H6"><?= e($a->userName ?? $a->departmentName ?? '—') ?></ui5-title>
+                                    <?php if ($a->userName !== null && $a->departmentName !== null): ?><ui5-label><?= e($a->departmentName) ?></ui5-label><?php endif; ?>
+                                    <ui5-tag design="<?= $a->role === AssignmentRole::ForAction ? 'Information' : 'Neutral' ?>" hide-state-icon><?= e(__('enums.assignment_role.' . $a->role->value)) ?></ui5-tag>
+                                    <?php if (!$a->isActive()): ?><ui5-tag design="Neutral" hide-state-icon><?= e(__('enums.assignment_status.' . $a->status->value)) ?></ui5-tag><?php endif; ?>
+                                </div>
+                                <?php if ($a->delegatedFromName !== null): ?>
+                                    <ui5-label><?= e(__('assignment.delegated_from', ['name' => $a->delegatedFromName])) ?></ui5-label>
+                                <?php endif; ?>
+                                <?php if ($a->instructions !== null): ?><ui5-text class="lt-prewrap"><?= e($a->instructions) ?></ui5-text><?php endif; ?>
+                                <ui5-label wrapping-type="Normal">
+                                    <?= e(__('assignment.by', ['name' => $a->assignedByName ?? '—', 'date' => local_datetime($a->createdAt)])) ?>
+                                    <?php if ($a->dueDate !== null): ?> · <?= e(__('mail.fields.due_date')) ?> <?= e(local_date($a->dueDate)) ?><?php endif; ?>
+                                </ui5-label>
+                            </div>
+                        </ui5-li-custom>
+                    <?php endforeach; ?>
+                </ui5-list>
+                </div>
+            <?php endif; ?>
+        </section>
+
+        <section class="lt-op-section" id="annotations" aria-labelledby="annotations-title">
+            <div class="lt-op-section__header">
+                <ui5-title level="H2" size="H4" id="annotations-title"><?= e($sections['annotations']) ?></ui5-title>
+                <?php if ($canAnnotate && !$editing): ?>
+                    <ui5-button design="Transparent" icon="notes" data-lt-open-dialog="dlg-annotate"><?= e(__('annotation.add')) ?></ui5-button>
+                <?php endif; ?>
+            </div>
+            <?php if ($annotations === []): ?>
+                <div class="lt-op-block lt-op-block--empty"><ui5-text><?= e(__('annotation.none')) ?></ui5-text></div>
+            <?php else: ?>
+                <div class="lt-op-block">
+                <ui5-list separators="Inner" accessible-name="<?= e($sections['annotations']) ?>">
+                    <?php foreach ($annotations as $note): ?>
+                        <ui5-li-custom>
+                            <div class="lt-item">
+                                <div class="lt-item__head">
+                                    <ui5-title level="H3" size="H6"><?= e($note->userName) ?></ui5-title>
+                                    <ui5-label><?= e(local_datetime($note->createdAt)) ?></ui5-label>
+                                    <?php if ($note->isPrivate): ?><ui5-tag design="Neutral" hide-state-icon><ui5-icon slot="icon" name="locked"></ui5-icon><?= e(__('annotation.private')) ?></ui5-tag><?php endif; ?>
+                                </div>
+                                <ui5-text class="lt-prewrap"><?= e($note->body) ?></ui5-text>
+                            </div>
+                        </ui5-li-custom>
+                    <?php endforeach; ?>
+                </ui5-list>
+                </div>
+            <?php endif; ?>
+        </section>
+
+        <section class="lt-op-section" id="attachments" aria-labelledby="attachments-title">
+            <div class="lt-op-section__header">
+                <ui5-title level="H2" size="H4" id="attachments-title"><?= e($sections['attachments']) ?></ui5-title>
+                <?php if ($canUpdate && !$editing): ?>
+                    <ui5-button design="Transparent" icon="upload" data-lt-open-dialog="dlg-upload"><?= e(__('attachment.upload')) ?></ui5-button>
+                <?php endif; ?>
+            </div>
+            <?php if ($attachments === []): ?>
+                <div class="lt-op-block lt-op-block--empty"><ui5-text><?= e(__('attachment.none')) ?></ui5-text></div>
+            <?php else: ?>
+                <div class="lt-op-block">
+                <ui5-list separators="Inner" accessible-name="<?= e($sections['attachments']) ?>">
+                    <?php foreach ($attachments as $file): ?>
+                        <ui5-li-custom>
+                            <div class="lt-item lt-item--row">
+                                <ui5-icon name="<?= $file->mimeType === 'application/pdf' ? 'pdf-attachment' : 'attachment' ?>"></ui5-icon>
+                                <ui5-text class="lt-item__grow"><?= e($file->originalName) ?></ui5-text>
+                                <ui5-label><?= e(Ui5::fileSize($file->sizeBytes, $locale ?? 'fr')) ?></ui5-label>
+                                <?php if ($file->isPurged()): ?>
+                                    <ui5-label wrapping-type="Normal"><?= e(__('attachment.purged', ['date' => local_date($file->purgedAt?->format('Y-m-d'))])) ?></ui5-label>
+                                <?php else: ?>
+                                    <?php if (AttachmentPolicy::isInline($file->mimeType)): ?>
+                                        <ui5-link href="<?= e($basePath) ?>/attachments/<?= e($file->id) ?>?inline=1" target="_blank"><?= e(__('attachment.view')) ?></ui5-link>
+                                    <?php endif; ?>
+                                    <ui5-link href="<?= e($basePath) ?>/attachments/<?= e($file->id) ?>"><?= e(__('attachment.download')) ?></ui5-link>
+                                <?php endif; ?>
+                            </div>
+                        </ui5-li-custom>
+                    <?php endforeach; ?>
+                </ui5-list>
+                </div>
+            <?php endif; ?>
+        </section>
+
+        <section class="lt-op-section" id="links" aria-labelledby="links-title">
+            <div class="lt-op-section__header">
+                <ui5-title level="H2" size="H4" id="links-title"><?= e($sections['links']) ?></ui5-title>
+                <?php if ($canLinkReply && !$editing): ?>
+                    <ui5-button design="Transparent" icon="chain-link" data-lt-open-dialog="dlg-link"><?= e(__('link.link_reply')) ?></ui5-button>
+                <?php endif; ?>
+            </div>
+            <?php if ($links === []): ?>
+                <div class="lt-op-block lt-op-block--empty"><ui5-text><?= e(__('link.none')) ?></ui5-text></div>
+            <?php else: ?>
+                <div class="lt-op-block">
+                <ui5-list separators="Inner" accessible-name="<?= e($sections['links']) ?>" data-lt-links>
+                    <?php foreach ($links as $link): ?>
+                        <ui5-li type="Navigation" data-lt-href="/mails/<?= e($link['mail_id']) ?>"
+                                description="<?= e($link['subject']) ?>"
+                                additional-text="<?= e(__('enums.status.' . $link['status'])) ?>"
+                                additional-text-state="<?= e(Ui5::TAG_DESIGNS['status'][$link['status']] ?? 'None') ?>"><?= e(__('link.' . $link['type'] . '.' . $link['side'])) ?> <?= e($link['reference']) ?></ui5-li>
+                    <?php endforeach; ?>
+                </ui5-list>
+                </div>
+            <?php endif; ?>
+        </section>
+
+        <section class="lt-op-section" id="history" aria-labelledby="history-title">
+            <ui5-title level="H2" size="H4" id="history-title"><?= e($sections['history']) ?></ui5-title>
+            <?php if ($history === []): ?>
+                <div class="lt-op-block lt-op-block--empty"><ui5-text><?= e(__('mail.history_empty')) ?></ui5-text></div>
+            <?php else: ?>
+                <div class="lt-op-block lt-op-block--padded">
+                <ui5-timeline accessible-name="<?= e($sections['history']) ?>">
+                    <?php foreach (array_reverse($history) as $entry): ?>
+                        <ui5-timeline-item icon="history" title-text="<?= e($entry['action']) ?>"
+                                           subtitle-text="<?= e($entry['user']) ?> · <?= e(local_datetime($entry['at'])) ?>">
+                            <?php foreach ($entry['changes'] as $change): ?>
+                                <?php
+                                $isEmpty = static fn (string $v): bool => $v === '' || $v === '—';
+                                if ($isEmpty($change['old']) && $isEmpty($change['new'])) {
+                                    continue;
+                                }
+                                // A value set for the first time, removed, or changed: three wordings.
+                                $key = $isEmpty($change['old']) ? 'object.value_set' : ($isEmpty($change['new']) ? 'object.value_removed' : 'object.changed');
+                                ?>
+                                <ui5-text class="lt-change"><?= e(__($key, ['field' => $change['field'], 'old' => $change['old'], 'new' => $change['new']])) ?></ui5-text>
+                            <?php endforeach; ?>
+                        </ui5-timeline-item>
+                    <?php endforeach; ?>
+                </ui5-timeline>
+                </div>
+            <?php endif; ?>
+        </section>
+    </div>
+
+    <?php if ($editing || $footerActions !== []): ?>
+        <ui5-bar slot="footerArea" design="FloatingFooter" accessible-name="<?= e(__('object.footer')) ?>">
+            <?php if ($editing): ?>
+                <?= $this->partial('partials/object-page/messages', ['errors' => $errors, 'labels' => $fieldLabels]) ?>
+                <ui5-button slot="endContent" design="Emphasized" data-lt-submit="mail-form"><?= e(__('common.save')) ?></ui5-button>
+                <ui5-button slot="endContent" design="Transparent" data-lt-href="/mails/<?= e($mail->id) ?>"><?= e(__('common.cancel')) ?></ui5-button>
+            <?php else: ?>
+                <?php foreach ($footerActions as $i => $action): ?>
+                    <?php $c = $confirm[$action->value] ?? null; ?>
+                    <ui5-button slot="endContent" design="<?= $i === 0 ? 'Emphasized' : 'Transparent' ?>"
+                        icon="<?= e($actionIcons[$action->value] ?? '') ?>" data-lt-action="wf-<?= e($action->value) ?>"
+                        <?php if ($c !== null): ?>
+                            data-confirm="<?= e($c['message']) ?>"
+                            data-confirm-title="<?= e(__('enums.action.' . $action->value)) ?>"
+                            data-confirm-state="<?= e($c['state'] ?? 'Critical') ?>"
+                            <?= isset($c['input']) ? 'data-confirm-input="comment" data-confirm-input-label="' . e($c['input']) . '"' : '' ?>
+                        <?php endif; ?>><?= e(__('enums.action.' . $action->value)) ?></ui5-button>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </ui5-bar>
     <?php endif; ?>
-</section>
+</ui5-dynamic-page>
+
+<?php if (!$editing): ?>
+    <?php foreach ($footerActions as $action): ?>
+        <form id="wf-<?= e($action->value) ?>" method="post" action="<?= e($url) ?>/actions/<?= e($action->value) ?>" hidden>
+            <?= $csrf->field() ?>
+            <input type="hidden" name="comment" value="">
+        </form>
+    <?php endforeach; ?>
+    <?= $this->partial('partials/object-page/confirm') ?>
+
+    <?php if ($canAssignNow || $canReassignNow): ?>
+        <?php foreach (array_filter(['assign' => $canAssignNow, 'reassign' => $canReassignNow]) as $kind => $_): ?>
+            <ui5-dialog id="dlg-<?= e($kind) ?>" data-lt-form-dialog header-text="<?= e(__('assignment.' . $kind)) ?>" <?= $kind === 'reassign' ? 'state="Critical"' : '' ?>>
+                <form method="post" action="<?= e($url) ?>/<?= e($kind) ?>" class="lt-dialog-form" novalidate>
+                    <?= $csrf->field() ?>
+                    <?php if ($kind === 'reassign'): ?>
+                        <ui5-message-strip design="Critical" hide-close-button><?= e(__('workflow.confirm.reassign', ['name' => $activeForAction->userName ?? $activeForAction->departmentName ?? ''])) ?></ui5-message-strip>
+                    <?php endif; ?>
+                    <ui5-label for="<?= e($kind) ?>-user" show-colon><?= e(__('assignment.fields.user_id')) ?></ui5-label>
+                    <ui5-select id="<?= e($kind) ?>-user" name="user_id"><?= Ui5::options($userOptions, '') ?></ui5-select>
+                    <?php if ($departments !== []): ?>
+                        <ui5-label for="<?= e($kind) ?>-department" show-colon><?= e(__('assignment.fields.department_id')) ?></ui5-label>
+                        <ui5-select id="<?= e($kind) ?>-department" name="department_id"><?= Ui5::options($departmentOptions, '') ?></ui5-select>
+                    <?php endif; ?>
+                    <?php if ($kind === 'assign'): ?>
+                        <ui5-label for="assign-role" required show-colon><?= e(__('assignment.fields.role')) ?></ui5-label>
+                        <ui5-select id="assign-role" name="role"><?= Ui5::options($roleOptions, '') ?></ui5-select>
+                    <?php endif; ?>
+                    <ui5-label for="<?= e($kind) ?>-due" show-colon><?= e(__('assignment.fields.due_date')) ?></ui5-label>
+                    <ui5-date-picker id="<?= e($kind) ?>-due" name="due_date" value-format="yyyy-MM-dd" display-format="dd/MM/yyyy" min-date="<?= e($today) ?>"
+                        placeholder="<?= e(__('list.date_placeholder')) ?>"
+                        value="<?= e(($kind === 'reassign' ? $activeForAction->dueDate : $mail->dueDate) ?? '') ?>"></ui5-date-picker>
+                    <ui5-label for="<?= e($kind) ?>-instructions" show-colon><?= e(__('assignment.fields.instructions')) ?></ui5-label>
+                    <ui5-textarea id="<?= e($kind) ?>-instructions" name="instructions" maxlength="2000" rows="3"></ui5-textarea>
+                    <?php if ($kind === 'reassign'): ?>
+                        <ui5-label for="reassign-comment" show-colon><?= e(__('workflow.reason')) ?></ui5-label>
+                        <ui5-textarea id="reassign-comment" name="comment" maxlength="1000" rows="2"></ui5-textarea>
+                    <?php endif; ?>
+                </form>
+                <div slot="footer" class="lt-dialog-footer">
+                    <ui5-button design="Emphasized" data-lt-dialog-submit><?= e(__('assignment.' . $kind)) ?></ui5-button>
+                    <ui5-button design="Transparent" data-lt-dialog-cancel><?= e(__('common.cancel')) ?></ui5-button>
+                </div>
+            </ui5-dialog>
+        <?php endforeach; ?>
+    <?php endif; ?>
+
+    <?php if ($canAnnotate): ?>
+        <ui5-dialog id="dlg-annotate" data-lt-form-dialog header-text="<?= e(__('annotation.add')) ?>">
+            <form method="post" action="<?= e($url) ?>/annotations" class="lt-dialog-form" novalidate>
+                <?= $csrf->field() ?>
+                <ui5-label for="note-body" required show-colon><?= e(__('annotation.body')) ?></ui5-label>
+                <ui5-textarea id="note-body" name="body" maxlength="5000" rows="5" required></ui5-textarea>
+                <ui5-checkbox name="is_private" value="1" text="<?= e(__('annotation.private_help')) ?>"></ui5-checkbox>
+            </form>
+            <div slot="footer" class="lt-dialog-footer">
+                <ui5-button design="Emphasized" data-lt-dialog-submit><?= e(__('annotation.add')) ?></ui5-button>
+                <ui5-button design="Transparent" data-lt-dialog-cancel><?= e(__('common.cancel')) ?></ui5-button>
+            </div>
+        </ui5-dialog>
+    <?php endif; ?>
+
+    <?php if ($canUpdate): ?>
+        <ui5-dialog id="dlg-upload" data-lt-form-dialog header-text="<?= e(__('attachment.upload')) ?>">
+            <form method="post" enctype="multipart/form-data" action="<?= e($url) ?>/attachments" class="lt-dialog-form" novalidate>
+                <?= $csrf->field() ?>
+                <ui5-label for="file" required show-colon><?= e(__('attachment.file')) ?></ui5-label>
+                <ui5-file-uploader id="file" name="file" accept="<?= e($accept) ?>" required placeholder="<?= e(__('attachment.file')) ?>"></ui5-file-uploader>
+                <ui5-label wrapping-type="Normal"><?= e(__('attachment.help', ['max' => $maxUploadMb])) ?></ui5-label>
+            </form>
+            <div slot="footer" class="lt-dialog-footer">
+                <ui5-button design="Emphasized" data-lt-dialog-submit><?= e(__('attachment.upload')) ?></ui5-button>
+                <ui5-button design="Transparent" data-lt-dialog-cancel><?= e(__('common.cancel')) ?></ui5-button>
+            </div>
+        </ui5-dialog>
+    <?php endif; ?>
+
+    <?php if ($canLinkReply): ?>
+        <ui5-dialog id="dlg-link" data-lt-form-dialog state="Critical" header-text="<?= e(__('link.link_reply')) ?>">
+            <form method="post" action="<?= e($url) ?>/reply-link" class="lt-dialog-form" novalidate>
+                <?= $csrf->field() ?>
+                <ui5-message-strip design="Critical" hide-close-button><?= e(__('workflow.confirm.link_reply')) ?></ui5-message-strip>
+                <ui5-label for="link-ref" required show-colon><?= e(__('link.reference')) ?></ui5-label>
+                <ui5-input id="link-ref" name="reference" maxlength="20" required placeholder="ENT-<?= e(date('Y')) ?>-00001"></ui5-input>
+            </form>
+            <div slot="footer" class="lt-dialog-footer">
+                <ui5-button design="Emphasized" data-lt-dialog-submit><?= e(__('link.link_reply')) ?></ui5-button>
+                <ui5-button design="Transparent" data-lt-dialog-cancel><?= e(__('common.cancel')) ?></ui5-button>
+            </div>
+        </ui5-dialog>
+    <?php endif; ?>
+<?php endif; ?>

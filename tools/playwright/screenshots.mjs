@@ -20,34 +20,37 @@ function plan(demo) {
     return [
         { file: '01-connexion', as: null, go: '/login' },
         { file: '02-tableau-de-bord', as: 'secretariat', go: '/' },
-        { file: '03-liste-courrier', as: 'secretariat', go: '/mails', wait: 'table.dataTable tbody tr' },
+        { file: '03-liste-courrier', as: 'secretariat', go: '/mails', wait: 'table.lt-dt tbody tr[data-id]' },
         {
             file: '04-nouveau-courrier', as: 'secretariat', go: '/mails/new?direction=incoming',
             before: async (page) => {
-                await page.fill('#subject', 'Demande d\'autorisation de voirie — rue des Tilleuls');
-                await page.fill('[data-lt-picker-input]', 'Mairie');
-                await page.waitForSelector('.lt-picker__option');
+                await page.locator('#subject input').fill('Demande d\'autorisation de voirie — rue des Tilleuls');
+                await page.click('[data-lt-wizard-next]');
+                await page.waitForFunction(() => document.querySelector('ui5-wizard-step[selected]')?.dataset.step === 'correspondent');
+                await page.locator('#correspondent_id input').pressSequentially('Mairie', { delay: 40 });
+                await page.waitForSelector('#correspondent_id ui5-suggestion-item');
             },
         },
         { file: '05-fiche-courrier', as: 'head', go: `/mails/${mail}` },
         {
             file: '06-cloture-confirmation', as: 'head', go: `/mails/${mail}`,
             before: async (page) => {
-                await page.click('form[action$="/actions/close"] button');
-                await page.waitForSelector('.swal2-popup', { state: 'visible' });
-                await page.fill('.swal2-textarea', 'Avis favorable transmis au bureau communautaire.');
+                await page.click('[data-lt-action="wf-close"]');
+                await page.waitForFunction(() => document.querySelector('#lt-confirm')?.open === true);
+                await page.locator('#lt-confirm-input').evaluate((el) => { el.value = 'Avis favorable transmis au bureau communautaire.'; });
             },
         },
         { file: '07-bordereau', as: 'secretariat', go: `/mails/${mail}/slip`, fullPage: true },
         { file: '08-reponse', as: 'secretariat', go: `/mails/new?reply_to=${mail}` },
         { file: '09-absences', as: 'agent2', go: '/delegations' },
         { file: '10-notifications', as: 'agent', go: '/notifications' },
-        { file: '11-registre', as: 'secretariat', go: '/register' },
+        { file: '11-registre', as: 'secretariat', go: '/register', wait: 'table.lt-dt tbody tr[data-id]' },
         { file: '12-statistiques', as: 'management', go: '/statistics', wait: 'canvas[data-chart="volumes"]', extra: 1200, fullPage: true },
         { file: '13-conservation', as: 'admin', go: '/retention-rules' },
         { file: '14-mobile-accueil', as: 'agent', go: '/', viewport: MOBILE },
-        { file: '15-mobile-liste', as: 'agent', go: '/mails', viewport: MOBILE, wait: 'table.dataTable tbody tr' },
-        { file: '16-theme-sombre', as: 'agent', go: '/mails', theme: 'dark', wait: 'table.dataTable tbody tr' },
+        { file: '15-mobile-liste', as: 'agent', go: '/mails', viewport: MOBILE, wait: 'table.lt-dt tbody tr[data-id]' },
+        { file: '17-vue-d-ensemble', as: 'head', go: '/overview', wait: 'canvas[data-lt-ov-chart="volumes"]', extra: 1000, viewport: { width: 1440, height: 1280 } },
+        { file: '16-theme-sombre', as: 'agent', go: '/mails', theme: 'dark', wait: 'table.lt-dt tbody tr[data-id]' },
     ];
 }
 
@@ -62,7 +65,7 @@ export async function takeScreenshots({ seed = true } = {}) {
     try {
         for (const shot of plan(demo)) {
             const viewport = shot.viewport ?? DESKTOP;
-            const key = `${shot.as}|${viewport.width}|${shot.theme ?? 'light'}`;
+            const key = `${shot.as}|${viewport.width}x${viewport.height}|${shot.theme ?? 'light'}`;
             if (!contexts.has(key)) {
                 const context = await browser.newContext({
                     viewport,
@@ -88,7 +91,21 @@ export async function takeScreenshots({ seed = true } = {}) {
             if (shot.before) await shot.before(page);
             await settle(page, shot.extra ?? 400);
             const path = join(SHOTS_DIR, `${shot.file}.png`);
+            if (shot.fullPage) {
+                // The shell scrolls its content area, not the document: grow the viewport to the content.
+                const height = await page.evaluate(() => {
+                    const main = document.querySelector('#main');
+                    return main ? Math.ceil(main.scrollHeight + main.getBoundingClientRect().top) : 0;
+                });
+                if (height > viewport.height) {
+                    await page.setViewportSize({ width: viewport.width, height });
+                    await page.waitForTimeout(300);
+                }
+            }
             await page.screenshot({ path, fullPage: !!shot.fullPage });
+            if (shot.fullPage) {
+                await page.setViewportSize(viewport);
+            }
             files.push(path);
             console.log(`  ✓ ${shot.file}.png`);
         }

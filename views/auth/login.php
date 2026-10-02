@@ -1,4 +1,10 @@
-<?php /** @var App\Core\View $this */ ?>
+<?php
+/**
+ * @floorplan None — page de connexion (avant l'entrée dans l'application)
+ *
+ * @var App\Core\View $this
+ */
+?>
 <?php $this->layout('layouts/main') ?>
 <?php $this->start('title') ?><?= e(__('auth.title')) ?><?php $this->stop() ?>
 <?php $this->start('main_class') ?>lt-main--bleed<?php $this->stop() ?>

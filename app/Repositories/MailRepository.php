@@ -285,6 +285,15 @@ final class MailRepository extends Repository
                 : "EXISTS (SELECT 1 FROM assignments a WHERE a.mail_id = m.id AND a.status = 'active' AND a.user_id IN (" . implode(', ', $ids) . '))';
         }
 
+        if ($filter->ids !== null) {
+            $ids = [];
+            foreach (array_values($filter->ids) as $i => $mailId) {
+                $ids[] = ':f_id_' . $i;
+                $params['f_id_' . $i] = $mailId;
+            }
+            $conditions[] = $ids === [] ? '1 = 0' : 'm.id IN (' . implode(', ', $ids) . ')';
+        }
+
         $like = $table->likePattern();
         if ($like !== null) {
             $fields = ['m.reference', 'm.subject', 'c.name', 'm.external_reference'];

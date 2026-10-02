@@ -28,6 +28,7 @@ final class AccessMatrixTest extends FunctionalTestCase
      */
     private const MATRIX = [
         '/' => [200, 200, 200, 200, 200],
+        '/navigation/counts' => [200, 200, 200, 200, 200],
         '/mails' => [200, 200, 200, 200, 200],
         '/mails/data' => [200, 200, 200, 200, 200],
         '/mails/export' => [200, 200, 200, 200, 200],
@@ -38,6 +39,7 @@ final class AccessMatrixTest extends FunctionalTestCase
         '/attachments/{attachment}' => [200, 200, 200, 200, 200],
         '/register' => [200, 200, 200, 200, 200],
         '/register/data' => [200, 200, 200, 200, 200],
+        '/overview' => [200, 403, 200, 403, 200],
         '/statistics' => [200, 403, 200, 403, 200],
         '/statistics/data' => [200, 403, 200, 403, 200],
         '/delegations' => [200, 200, 200, 200, 200],

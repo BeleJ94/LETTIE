@@ -83,7 +83,9 @@ final class MailHttpTest extends TestCase
 
         $form = $kernel->handle(new Request('GET', '/mails/new', ['direction' => 'incoming']));
         self::assertSame(200, $form->status(), $form->body());
-        self::assertStringContainsString('correspondent-picker.js', $form->body());
+        self::assertStringContainsString('data-lt-object-page', $form->body(), 'creation is an Object Page in creation mode');
+        self::assertStringContainsString('data-lt-suggest data-url="/correspondents/search"', $form->body());
+        self::assertStringContainsString('data-lt-submit="mail-form"', $form->body(), 'Save is in the footer');
 
         $created = $this->post($kernel, '/mails', $this->mailForm());
         self::assertSame(302, $created->status(), $created->body());
@@ -111,6 +113,9 @@ final class MailHttpTest extends TestCase
         $edit = $kernel->handle(new Request('GET', "/mails/{$id}/edit"));
         self::assertSame(200, $edit->status());
         self::assertStringContainsString('value="2026-09-01T09:30"', $edit->body());
+        self::assertStringContainsString('<ui5-dynamic-page id="mail-page" class="lt-object-page" data-lt-object-page data-editing', $edit->body(), 'edit mode of the same Object Page');
+        self::assertStringContainsString('<input type="hidden" name="_method" value="PUT">', $edit->body());
+        self::assertStringNotContainsString('data-lt-open-dialog', $edit->body(), 'no other action while editing');
 
         // The browser posts _method=PUT; Request::fromGlobals turns it into PUT (covered in RequestTest).
         // A posted "status" is ignored: status changes go through workflow actions only.
@@ -121,8 +126,7 @@ final class MailHttpTest extends TestCase
 
         $history = $this->kernel($this->secretary)->handle(new Request('GET', "/mails/{$id}"))->body();
         self::assertStringContainsString('Modification', $history);
-        self::assertStringContainsString('<del>Haute</del>', $history);
-        self::assertStringContainsString('<ins>Urgente</ins>', $history);
+        self::assertStringContainsString('Priorité : Haute → Urgente', $history);
     }
 
     public function testValidationErrorsRedisplayTheFormWith422(): void
@@ -131,7 +135,10 @@ final class MailHttpTest extends TestCase
         $response = $this->post($kernel, '/mails', $this->mailForm(['subject' => '', 'due_date' => '2026-08-01']));
         self::assertSame(422, $response->status());
         self::assertStringContainsString('Le champ Objet est obligatoire.', $response->body());
-        self::assertStringContainsString('aria-invalid="true"', $response->body());
+        // Object Page: the field is flagged and the message popover links to it.
+        self::assertMatchesRegularExpression('#<ui5-input id="subject"[^>]*value-state="Negative"#', $response->body());
+        self::assertMatchesRegularExpression('#<ui5-li type="Active" icon="error" data-lt-focus="subject"[^>]*description="Le champ Objet est obligatoire\."#', $response->body());
+        self::assertStringContainsString('data-lt-messages-button', $response->body());
         self::assertSame(0, (int) $this->pdo->query('SELECT COUNT(*) FROM mails')->fetchColumn());
 
         $rule = $this->post($this->kernel($this->secretary), '/mails', $this->mailForm(['due_date' => '2026-08-01']));
@@ -158,7 +165,21 @@ final class MailHttpTest extends TestCase
         ]);
         self::assertSame(302, $created->status(), $created->body());
 
-        $search = $this->kernel($this->secretary)->handle(new Request('GET', '/correspondents/search', ['q' => 'jean']));
+        // Object Page in creation mode: errors flag the field and are listed in the message popover.
+        $form = $this->kernel($this->secretary)->handle(new Request('GET', '/correspondents/new'))->body();
+        self::assertStringContainsString('data-lt-object-page data-editing', $form);
+        self::assertStringContainsString('<ui5-breadcrumbs-item href="/correspondents">', $form);
+        self::assertStringContainsString('data-lt-submit="correspondent-form"', $form);
+        self::assertStringNotContainsString('data-lt-messages-button', $form, 'no message button without errors');
+        $invalid = $this->post($this->kernel($this->secretary), '/correspondents', ['type' => 'person', 'name' => '', 'country' => 'FRA', 'email' => 'nope']);
+        self::assertSame(422, $invalid->status());
+        foreach (['name', 'country', 'email'] as $field) {
+            self::assertMatchesRegularExpression('#<ui5-input id="' . $field . '"[^>]*value-state="Negative"#', $invalid->body());
+            self::assertStringContainsString('data-lt-focus="' . $field . '"', $invalid->body());
+        }
+        self::assertMatchesRegularExpression('#data-lt-messages-button[^>]*>3</ui5-button>#s', $invalid->body(), 'the footer button counts the errors');
+
+        $search =$this->kernel($this->secretary)->handle(new Request('GET', '/correspondents/search', ['q' => 'jean']));
         $data = json_decode($search->body(), true)['data'];
         self::assertSame('Jeanne Martin', $data[0]['label']);
 

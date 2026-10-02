@@ -45,6 +45,13 @@ final class DeadlineService
         ];
     }
 
+    /** Overdue mail of the user (and of the absent colleagues they replace): counter of the side navigation. */
+    public function mineOverdue(Actor $actor): int
+    {
+        $today = $this->today();
+        return $this->deadlines->counters($this->workflow->coveredUserIds($actor), $today, $today)['overdue'];
+    }
+
     public function today(): string
     {
         return $this->clock->now()->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d');

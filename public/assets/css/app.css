@@ -21,8 +21,6 @@ html:not(.lt-ui5-ready) body { visibility: hidden; animation: lt-reveal 0s 1.5s 
 /* 2. Layout dimensions (not theme values) --------------------------------- */
 :root {
     color-scheme: light;
-    --lt-topbar-h: 3.5rem;
-    --lt-sidebar-w: 15rem;
     --lt-content-max: 90rem;
     --lt-tap: 2.75rem;          /* minimum interactive size, cozy (Fiori) */
     --lt-transition: 150ms ease;
@@ -70,51 +68,16 @@ svg.lucide { width: 1.15em; height: 1.15em; flex-shrink: 0; vertical-align: -0.2
 .lt-skip:focus { top: var(--sapContent_Space_Tiny); }
 
 /* 4. Layout --------------------------------------------------------------- */
-.lt-topbar {
-    position: sticky; top: 0; z-index: 30;
-    display: flex; align-items: center; gap: calc(var(--sapContent_Space_Tiny) * 1.5);
-    height: var(--lt-topbar-h);
-    padding: 0 var(--sapContent_Space_Small);
-    background: var(--sapGroup_ContentBackground);
-    border-bottom: 1px solid var(--sapList_BorderColor);
-}
-
-.lt-brand {
-    display: inline-flex; align-items: center; gap: var(--sapContent_Space_Tiny);
-    font-weight: 700; font-size: var(--sapFontHeader5Size); color: var(--sapTextColor); text-decoration: none;
-}
-.lt-brand svg.lucide { color: var(--sapBrandColor); }
-
-.lt-topbar__spacer { flex: 1; }
-.lt-topbar__tools { display: flex; align-items: center; gap: var(--sapContent_Space_Tiny); }
-
-.lt-user { display: flex; flex-direction: column; line-height: 1.2; text-align: right; }
-.lt-user__name { font-weight: 500; }
-.lt-user__role { font-size: var(--sapFontSmallSize); color: var(--sapContent_LabelColor); }
-
-.lt-shell { display: flex; min-height: calc(100vh - var(--lt-topbar-h)); }
-
-.lt-sidebar {
-    flex: 0 0 var(--lt-sidebar-w);
-    padding: var(--sapContent_Space_Small) var(--sapContent_Space_Tiny);
-    background: var(--sapGroup_ContentBackground);
-    border-right: 1px solid var(--sapList_BorderColor);
-}
-
-.lt-nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.lt-nav a {
-    display: flex; align-items: center; gap: calc(var(--sapContent_Space_Tiny) * 1.5);
-    min-height: var(--lt-tap);
-    padding: var(--sapContent_Space_Tiny) calc(var(--sapContent_Space_Tiny) * 1.5);
-    border-radius: var(--sapButton_BorderCornerRadius);
-    color: var(--sapTextColor); text-decoration: none; font-weight: 500;
-}
-.lt-nav a:hover { background: var(--sapNeutralBackground); }
-.lt-nav a[aria-current="page"] { background: var(--sapInformationBackground); color: var(--sapBrandColor); }
+/* Shell: ui5-navigation-layout (ShellBar in its header, side navigation, page content).
+   Only the placement of the page content is styled here; the bars are UI5 components. */
+html, body { height: 100%; }
+body:has(> .lt-shell) { overflow: hidden; }
+.lt-shell { display: block; height: 100%; }
+.lt-shell:not(:defined) > [slot] { display: none; }
 
 .lt-main {
-    flex: 1; min-width: 0;
-    width: 100%; max-width: var(--lt-content-max);
+    box-sizing: border-box;
+    width: 100%; max-width: var(--lt-content-max); min-height: 100%;
     padding: calc(var(--sapContent_Space_Small) * 1.5);
 }
 
@@ -124,17 +87,207 @@ svg.lucide { width: 1.15em; height: 1.15em; flex-shrink: 0; vertical-align: -0.2
 }
 .lt-page-header h1 { margin: 0; }
 
-.lt-backdrop { display: none; }
-
 .lt-guest .lt-main { margin: 0 auto; }
 
-.lt-offline-banner {
-    display: none;
-    padding: var(--sapContent_Space_Tiny) var(--sapContent_Space_Small);
-    background: var(--sapWarningBackground); color: var(--sapCriticalTextColor);
-    text-align: center; font-weight: 500;
-}
+.lt-flash, .lt-offline-banner { margin-bottom: var(--sapContent_Space_Small); }
+.lt-offline-banner { display: none; }
 .lt-offline .lt-offline-banner { display: block; }
+
+/* Launchpad (home page): groups of tiles. Tiles are ui5-card; only the grid is ours. */
+.lt-launchpad__title { margin-bottom: var(--sapContent_Space_Small); }
+.lt-launchpad__group { margin-bottom: calc(var(--sapContent_Space_Small) * 1.5); }
+.lt-launchpad__group > ui5-title { margin-bottom: var(--sapContent_Space_Tiny); }
+.lt-tiles {
+    display: grid; gap: var(--sapContent_Space_Small);
+    grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+}
+.lt-tile { display: block; height: 100%; }
+.lt-tile::part(root) { box-sizing: border-box; height: 100%; }
+.lt-tile__content {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sapContent_Space_Tiny);
+    padding: 0 var(--sapContent_Space_Small) var(--sapContent_Space_Small);
+}
+.lt-tile__value { font-variant-numeric: tabular-nums; }
+.lt-tile[data-state="Negative"] .lt-tile__value { color: var(--sapNegativeTextColor); }
+.lt-tile[data-state="Critical"] .lt-tile__value { color: var(--sapCriticalTextColor); }
+.lt-tile[data-state="Information"] .lt-tile__value { color: var(--sapInformativeTextColor); }
+.lt-tile__state { margin-left: auto; align-self: center; }
+.lt-launchpad__upcoming { max-width: 60rem; }
+
+/* Tablet: narrower tiles; large phone: two columns; phone: one tile per row. */
+@media (max-width: 1023px) {
+    .lt-tiles { grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: calc(var(--sapContent_Space_Tiny) * 1.5); }
+}
+@media (max-width: 599px) {
+    .lt-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sapContent_Space_Tiny); }
+}
+@media (max-width: 479px) {
+    .lt-tiles { grid-template-columns: 1fr; }
+}
+
+/* List Report (docs/FIORI_DESIGN.md, "Modèle List Report"): ui5-dynamic-page filling the content
+   area, filter bar grid, table header. Components are UI5; only their placement is ours. */
+[hidden] { display: none !important; }
+.lt-main.lt-main--page { display: flex; flex-direction: column; height: 100%; max-width: none; padding: 0; }
+.lt-main--page > .lt-flash, .lt-main--page > .lt-offline-banner { margin: var(--sapContent_Space_Small) var(--sapContent_Space_Small) 0; }
+.lt-list-report { flex: 1; min-height: 0; }
+.lt-list-report__content { padding-block: var(--sapContent_Space_Small); }
+.lt-list-report__result { margin-bottom: var(--sapContent_Space_Small); white-space: pre-line; }
+
+/* Compact filter bar: each field takes the width it needs, so the usual filters, the check boxes
+   and the buttons share one line on a desktop screen and wrap only when the room is missing. */
+.lt-filter-bar {
+    display: flex; flex-wrap: wrap; align-items: flex-end;
+    gap: calc(var(--sapContent_Space_Tiny) / 2) var(--sapContent_Space_Tiny);
+}
+.lt-filter-bar__field { display: flex; flex-direction: column; flex: 0 1 8rem; min-width: 7rem; }
+.lt-filter-bar__field > ui5-input, .lt-filter-bar__field > ui5-select, .lt-filter-bar__field > ui5-date-picker { width: 100%; min-width: 0; }
+.lt-filter-bar__field > ui5-label { font-size: var(--sapFontSmallSize); }
+.lt-filter-bar__field--wide { flex: 1 1 12rem; max-width: 16rem; }
+.lt-filter-bar__field--checks { flex: none; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 0; }
+.lt-filter-bar__actions { display: flex; flex: none; justify-content: flex-end; gap: calc(var(--sapContent_Space_Tiny) / 2); margin-left: auto; }
+.lt-lr-heading { display: flex; align-items: center; gap: var(--sapContent_Space_Tiny); }
+/* Less white space around the filters: the title line keeps the height of its content. */
+.lt-list-report ui5-dynamic-page-title { --_ui5_dynamic_page_title_min_height: 2.75rem; --_ui5_dynamic_page_title_padding_top: calc(var(--sapContent_Space_Tiny) / 2); --_ui5_dynamic_page_title_padding_bottom: 0; }
+.lt-list-report ui5-dynamic-page-header { padding-block: calc(var(--sapContent_Space_Tiny) / 2) var(--sapContent_Space_Tiny); }
+
+.lt-table-header { display: flex; align-items: center; gap: var(--sapContent_Space_Small); margin-bottom: var(--sapContent_Space_Tiny); }
+.lt-table-header > ui5-title { flex: none; }
+.lt-table-header__toolbar { flex: 1; min-width: 0; }
+.lt-cell-strong { font-family: var(--sapFontBoldFamily); }
+
+.lt-dialog-form { display: flex; flex-direction: column; gap: var(--sapContent_Space_Tiny); min-width: min(24rem, 78vw); padding-block: var(--sapContent_Space_Tiny); }
+.lt-dialog-form > ui5-label { margin-top: calc(var(--sapContent_Space_Tiny) / 2); }
+.lt-dialog-footer, .lt-popover-footer {
+    display: flex; justify-content: flex-end; gap: var(--sapContent_Space_Tiny);
+    width: 100%; padding-block: calc(var(--sapContent_Space_Tiny) / 2);
+}
+@media (max-width: 599px) {
+    .lt-filter-bar__field, .lt-filter-bar__field--wide { flex: 1 1 100%; max-width: none; }
+    .lt-filter-bar__field--checks { flex-wrap: wrap; }
+    .lt-table-header { flex-wrap: wrap; }
+    .lt-list-report__content { padding-inline: var(--sapContent_Space_Tiny); }
+}
+
+/* Object Page (docs/FIORI_DESIGN.md, "Modèle Object Page"): ui5-dynamic-page with a KPI header,
+   an anchor bar, sections and a floating footer. Only the placement of the blocks is ours. */
+.lt-object-page { flex: 1; min-height: 0; }
+.lt-object-page__content { padding-bottom: var(--sapContent_Space_Medium); }
+.lt-tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sapContent_Space_Tiny); }
+
+.lt-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: var(--sapContent_Space_Small) var(--sapContent_Space_Medium); }
+.lt-kpi { display: flex; flex-direction: column; align-items: flex-start; gap: calc(var(--sapContent_Space_Tiny) / 2); min-width: 0; }
+
+/* The anchor bar stays visible under the snapped header while the sections scroll. */
+/* --lt-op-title and --lt-op-bar are measured by pages/object-page.js (height of the sticky title and of the bar). */
+.lt-anchor-bar { position: sticky; top: var(--lt-op-title, 0px); z-index: 2; background: var(--sapBackgroundColor); padding-top: calc(var(--sapContent_Space_Tiny) * 1.5); }
+.lt-op-section { padding-top: var(--sapContent_Space_Small); scroll-margin-top: calc(var(--lt-op-title, 0px) + var(--lt-op-bar, 3rem)); }
+/* Titles and loose texts are indented like the text inside the blocks (and like the page header). */
+.lt-op-section > ui5-title, .lt-op-section > ui5-label, .lt-op-section__header { margin-bottom: var(--sapContent_Space_Tiny); padding-inline: var(--sapContent_Space_Small); }
+.lt-op-section > ui5-title, .lt-op-section > ui5-label { display: block; }
+.lt-op-section__header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sapContent_Space_Tiny); min-height: var(--lt-tap); }
+/* Every section shows its content in the same white block as the ui5-form of the first one. */
+.lt-op-block { overflow: hidden; background: var(--sapGroup_ContentBackground); border-radius: var(--sapElement_BorderCornerRadius); }
+.lt-op-block--padded, .lt-op-block--empty { padding: var(--sapContent_Space_Small); }
+.lt-op-block--empty ui5-text { color: var(--sapContent_LabelColor); }
+.lt-op-section__header > ui5-title { margin-right: auto; }
+.lt-op-strip { margin-top: var(--sapContent_Space_Small); }
+
+.lt-item { display: flex; flex-direction: column; gap: calc(var(--sapContent_Space_Tiny) / 2); width: 100%; padding-block: calc(var(--sapContent_Space_Tiny) * 1.5); }
+.lt-item--row { flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--sapContent_Space_Tiny) var(--sapContent_Space_Small); }
+.lt-item__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sapContent_Space_Tiny); }
+.lt-item__grow { flex: 1; min-width: 8rem; overflow-wrap: anywhere; }
+.lt-change { display: block; }
+.lt-prewrap { white-space: pre-wrap; }
+.lt-field-stack { display: flex; flex-direction: column; align-items: flex-start; gap: calc(var(--sapContent_Space_Tiny) / 2); width: 100%; }
+.lt-field-stack > ui5-input, .lt-field-stack > ui5-date-picker { width: 100%; }
+ui5-form-item > ui5-input, ui5-form-item > ui5-select, ui5-form-item > ui5-textarea, ui5-form-item > ui5-date-picker, ui5-form-item > ui5-datetime-picker { width: 100%; }
+.lt-dialog-form > ui5-select, .lt-dialog-form > ui5-input, .lt-dialog-form > ui5-textarea, .lt-dialog-form > ui5-date-picker, .lt-dialog-form > ui5-file-uploader { width: 100%; }
+form.lt-dialog-form { margin: 0; }
+
+/* Wizard and simple forms (docs/FIORI_DESIGN.md, "Formulaires") */
+.lt-wizard-form { display: block; margin: 0; }
+.lt-wizard-form ui5-wizard { height: auto; min-height: 26rem; }
+.lt-wizard-step { display: flex; flex-direction: column; gap: var(--sapContent_Space_Tiny); padding-bottom: var(--sapContent_Space_Medium); }
+.lt-form-actions { display: flex; justify-content: flex-end; gap: var(--sapContent_Space_Tiny); padding-top: var(--sapContent_Space_Small); }
+ui5-form-item > ui5-combobox, ui5-form-item > ui5-step-input, ui5-form-item > ui5-file-uploader { width: 100%; }
+.lt-field-stack > ui5-select, .lt-field-stack > ui5-file-uploader { width: 100%; }
+
+/* Overview Page (docs/FIORI_DESIGN.md §15): a grid of ui5-card. KPI cards on one row, then the
+   list cards, then the chart cards; everything stacks on small screens. */
+.lt-overview-page { flex: 1; min-height: 0; }
+.lt-ov-grid {
+    display: grid; align-items: stretch; gap: var(--sapContent_Space_Small);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    padding-block: var(--sapContent_Space_Small) var(--sapContent_Space_Medium);
+}
+.lt-ov-card { display: block; grid-column: span 6; min-width: 0; }
+.lt-ov-card::part(root) { box-sizing: border-box; height: 100%; }
+.lt-ov-card--kpi { grid-column: span 3; }
+.lt-ov-grid[data-kpis="3"] .lt-ov-card--kpi { grid-column: span 4; }
+.lt-ov-grid[data-lists="1"] .lt-ov-card--list { grid-column: span 12; }
+.lt-ov-kpi {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sapContent_Space_Tiny);
+    padding: 0 var(--sapContent_Space_Small) var(--sapContent_Space_Small);
+}
+.lt-ov-kpi__value { font-variant-numeric: tabular-nums; }
+.lt-ov-kpi__state { margin-left: auto; align-self: center; }
+.lt-ov-card[data-state="Negative"] .lt-ov-kpi__value { color: var(--sapNegativeTextColor); }
+.lt-ov-card[data-state="Critical"] .lt-ov-kpi__value { color: var(--sapCriticalTextColor); }
+.lt-ov-card[data-state="Positive"] .lt-ov-kpi__value { color: var(--sapPositiveTextColor); }
+.lt-ov-chart { position: relative; height: 16rem; padding: 0 var(--sapContent_Space_Small) var(--sapContent_Space_Small); }
+.lt-ov-data { margin: 0 var(--sapContent_Space_Small) var(--sapContent_Space_Small); }
+@media (max-width: 1279px) {
+    .lt-ov-card--kpi, .lt-ov-grid[data-kpis="3"] .lt-ov-card--kpi { grid-column: span 6; }
+}
+@media (max-width: 899px) {
+    .lt-ov-card--list, .lt-ov-card--chart { grid-column: span 12; }
+}
+@media (max-width: 479px) {
+    .lt-ov-card--kpi, .lt-ov-grid[data-kpis="3"] .lt-ov-card--kpi { grid-column: span 12; }
+    .lt-ov-grid { gap: var(--sapContent_Space_Tiny); }
+}
+
+/* List Report table: a compact DataTable in a white block. One line per row, tight paddings,
+   the colours of the UI5 lists. Long texts are cut with an ellipsis (full text in the tooltip). */
+.lt-dt-block { overflow-x: auto; background: var(--sapGroup_ContentBackground); border-radius: var(--sapElement_BorderCornerRadius); }
+table.lt-table.lt-dt { font-size: var(--sapFontSize); }
+table.lt-table.lt-dt thead th, table.lt-table.lt-dt tbody td {
+    height: 2rem; padding: 0 var(--sapContent_Space_Tiny);
+    border-bottom: 1px solid var(--sapList_BorderColor);
+    white-space: nowrap; vertical-align: middle; text-align: left;
+}
+table.lt-table.lt-dt thead th {
+    color: var(--sapList_HeaderTextColor); background: var(--sapList_HeaderBackground);
+    border-bottom: 1px solid var(--sapList_HeaderBorderColor); font-size: var(--sapFontSize);
+}
+table.lt-table.lt-dt tbody tr { cursor: pointer; }
+/* Rows that open nothing: settings lists rendered by the server, lists without an object page. */
+table.lt-table.lt-dt.lt-dt--static tbody tr { cursor: default; }
+table.lt-table.lt-dt .lt-dt__actions { width: 1%; padding-block: 0; text-align: right; }
+.lt-table-header--next { margin-top: var(--sapContent_Space_Small); }
+table.lt-table.lt-dt tbody tr:hover { background: var(--sapList_Hover_Background); }
+table.lt-table.lt-dt tbody tr.selected { background: var(--sapList_SelectionBackgroundColor); }
+table.lt-table.lt-dt tbody tr.selected > * { box-shadow: none; }
+table.lt-table.lt-dt tbody tr:focus-visible { outline-offset: -2px; }
+table.lt-table.lt-dt .lt-dt__select { width: 1%; cursor: default; }
+.lt-dt__check { display: block; width: 1rem; height: 1rem; margin: 0; accent-color: var(--sapSelectedColor); cursor: pointer; }
+/* DataTables right-aligns dates and numbers by type: a list reads better left-aligned, numbers excepted. */
+table.lt-table.lt-dt th.dt-type-date, table.lt-table.lt-dt td.dt-type-date, table.lt-table.lt-dt th.dt-type-numeric:not(.lt-num), table.lt-table.lt-dt td.dt-type-numeric:not(.lt-num) { text-align: left; }
+table.lt-table.lt-dt thead th.dt-type-date .dt-column-header, table.lt-table.lt-dt thead th.dt-type-numeric:not(.lt-num) .dt-column-header { flex-direction: row; }
+table.lt-table.lt-dt td.lt-num, table.lt-table.lt-dt th.lt-num { text-align: right; }
+.lt-dt__text { display: inline-block; max-width: clamp(8rem, 13vw, 26rem); overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+.lt-dt-block div.dt-container .dt-layout-row { margin: 0; padding: var(--sapContent_Space_Tiny) var(--sapContent_Space_Small); }
+.lt-dt-block div.dt-container .dt-layout-row.dt-layout-table { padding: 0; }
+.lt-dt-block div.dt-container .dt-layout-cell.dt-layout-start { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sapContent_Space_Small); }
+.lt-dt-block div.dt-container .dt-info { padding-top: 0; color: var(--sapContent_LabelColor); }
+.lt-dt-block td.dt-empty { cursor: default; white-space: normal; }
+@media (max-width: 640px) {
+    table.lt-table.lt-dt tbody td { height: auto; min-height: 2rem; padding-block: calc(var(--sapContent_Space_Tiny) / 2); white-space: normal; }
+    .lt-dt__text { display: inline; max-width: none; overflow: visible; white-space: normal; }
+    table.lt-table.lt-dt .lt-dt__select { width: 100%; }
+    table.lt-table.lt-dt td.lt-num { text-align: left; }
+}
 
 /* 5. Components ----------------------------------------------------------- */
 .lt-card {
@@ -144,8 +297,6 @@ svg.lucide { width: 1.15em; height: 1.15em; flex-shrink: 0; vertical-align: -0.2
     box-shadow: var(--sapContent_Shadow0);
     padding: calc(var(--sapContent_Space_Small) * 1.5);
 }
-
-.lt-grid { display: grid; gap: var(--sapContent_Space_Small); grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 
 .lt-btn, button, input[type="submit"] {
     display: inline-flex; align-items: center; justify-content: center; gap: var(--sapContent_Space_Tiny);
@@ -165,20 +316,15 @@ svg.lucide { width: 1.15em; height: 1.15em; flex-shrink: 0; vertical-align: -0.2
     color: var(--sapButton_Emphasized_TextColor); background: var(--sapBrandColor); border-color: var(--sapBrandColor);
 }
 .lt-btn--primary:hover, button[type="submit"]:not(.lt-btn--ghost):not(.lt-btn):hover { background: var(--sapButton_Emphasized_Hover_Background); }
-.lt-btn--danger { color: var(--sapButton_Negative_TextColor); background: var(--sapButton_Negative_Background); border-color: var(--sapButton_Negative_BorderColor); }
 .lt-btn--ghost { background: transparent; border-color: transparent; }
-.lt-btn--icon { width: var(--lt-tap); padding: 0; }
 button:disabled, .is-loading { opacity: .6; cursor: progress; }
 
 .lt-form { display: flex; flex-direction: column; gap: var(--sapContent_Space_Small); }
 .lt-field { display: flex; flex-direction: column; gap: calc(var(--sapContent_Space_Tiny) / 2); }
 .lt-field label, label { font-weight: 500; }
-.lt-field__help { font-size: var(--sapFontSmallSize); color: var(--sapContent_LabelColor); }
 .lt-field__error { font-size: var(--sapFontSmallSize); color: var(--sapNegativeTextColor); }
 
-input[type="text"], input[type="email"], input[type="password"], input[type="search"],
-input[type="date"], input[type="datetime-local"], input[type="number"], input[type="tel"],
-select, textarea {
+input[type="text"], input[type="email"], input[type="password"], input[type="search"], input[type="date"], input[type="datetime-local"], input[type="number"], input[type="tel"], select, textarea {
     width: 100%;
     min-height: var(--lt-tap);
     padding: var(--sapContent_Space_Tiny) calc(var(--sapContent_Space_Tiny) * 1.5);
@@ -200,9 +346,7 @@ textarea { min-height: 6rem; resize: vertical; }
     margin-bottom: var(--sapContent_Space_Small);
 }
 .lt-alert--error { color: var(--sapNegativeTextColor); background: var(--sapErrorBackground); border-color: currentColor; }
-.lt-alert--success { color: var(--sapPositiveTextColor); background: var(--sapSuccessBackground); border-color: currentColor; }
 .lt-alert--warning { color: var(--sapCriticalTextColor); background: var(--sapWarningBackground); border-color: currentColor; }
-.lt-alert--info { color: var(--sapInformativeTextColor); background: var(--sapInformationBackground); border-color: currentColor; }
 
 .lt-badge {
     display: inline-block;
@@ -223,17 +367,16 @@ textarea { min-height: 6rem; resize: vertical; }
 .lt-due--overdue { color: var(--sapNegativeTextColor); font-weight: 600; }
 .lt-due--soon { color: var(--sapCriticalTextColor); font-weight: 600; }
 
-.lt-error-list { text-align: left; margin: 0; padding-left: 1.25rem; }
-
 /* Login page: illustrated hero + form panel */
 /* Doubled class: must win over the responsive .lt-main paddings declared later. */
-.lt-main.lt-main--bleed { max-width: none; padding: 0; }
-.lt-main--bleed > .lt-alert { margin: var(--sapContent_Space_Small); }
+.lt-main.lt-main--bleed { display: flex; flex-direction: column; max-width: none; padding: 0; }
+.lt-main--bleed > .lt-login-page { flex: 1; }
+.lt-main--bleed > .lt-flash { margin: var(--sapContent_Space_Small); }
 
 .lt-login-page {
     display: grid;
     grid-template-columns: minmax(0, 1.15fr) minmax(360px, 1fr);
-    min-height: calc(100vh - var(--lt-topbar-h));
+    min-height: 100%;
 }
 
 .lt-login-hero {
@@ -325,12 +468,10 @@ textarea { min-height: 6rem; resize: vertical; }
 }
 
 .lt-login { max-width: 24rem; margin: 8vh auto 0; }
-.lt-login .lt-brand { justify-content: center; width: 100%; margin-bottom: calc(var(--sapContent_Space_Small) * 1.5); font-size: var(--sapFontHeader4Size); }
 
 .lt-chart { position: relative; min-height: 260px; }
 
 .lt-muted { color: var(--sapContent_LabelColor); }
-.lt-prewrap { white-space: pre-wrap; }
 .lt-actions { display: flex; flex-wrap: wrap; gap: var(--sapContent_Space_Tiny); }
 .lt-card + .lt-card, .lt-columns + .lt-card { margin-top: var(--sapContent_Space_Small); }
 
@@ -340,9 +481,6 @@ fieldset.lt-field { border: 0; padding: 0; margin: 0; flex-direction: row; flex-
 fieldset.lt-field legend { font-weight: 500; margin-bottom: calc(var(--sapContent_Space_Tiny) / 2); width: 100%; }
 
 /* Two-column forms, one column on small screens */
-.lt-form--grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sapContent_Space_Small); }
-.lt-span-2 { grid-column: 1 / -1; }
-.lt-form__actions { display: flex; justify-content: flex-end; gap: var(--sapContent_Space_Tiny); padding-top: var(--sapContent_Space_Tiny); border-top: 1px solid var(--sapList_BorderColor); }
 
 /* Table filters */
 .lt-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: calc(var(--sapContent_Space_Tiny) * 1.5); margin-bottom: var(--sapContent_Space_Small); padding: var(--sapContent_Space_Small); }
@@ -352,41 +490,17 @@ fieldset.lt-field legend { font-weight: 500; margin-bottom: calc(var(--sapConten
 /* Detail page */
 .lt-columns { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--sapContent_Space_Small); align-items: start; }
 .lt-columns .lt-card + .lt-card { margin-top: 0; }
-.lt-dl { display: grid; grid-template-columns: max-content 1fr; gap: var(--sapContent_Space_Tiny) var(--sapContent_Space_Small); margin: 0 0 var(--sapContent_Space_Small); }
-.lt-dl dt { color: var(--sapContent_LabelColor); font-weight: 500; }
-.lt-dl dd { margin: 0; overflow-wrap: anywhere; }
-
-.lt-files { list-style: none; margin: 0 0 var(--sapContent_Space_Small); padding: 0; }
-.lt-files li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sapContent_Space_Tiny); padding: var(--sapContent_Space_Tiny) 0; border-bottom: 1px solid var(--sapList_BorderColor); }
-.lt-files__name { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 500; }
-.lt-upload { padding-top: var(--sapContent_Space_Tiny); }
-
-.lt-timeline { list-style: none; margin: 0; padding: 0; }
-.lt-timeline > li { position: relative; padding: 0 0 var(--sapContent_Space_Small) calc(var(--sapContent_Space_Small) * 1.5); border-left: 2px solid var(--sapList_BorderColor); margin-left: var(--sapContent_Space_Tiny); }
-.lt-timeline > li::before { content: ""; position: absolute; left: -7px; top: .35rem; width: 12px; height: 12px; border-radius: 50%; background: var(--sapBrandColor); }
-.lt-timeline__head { display: flex; flex-wrap: wrap; gap: var(--sapContent_Space_Tiny); margin-bottom: var(--sapContent_Space_Tiny); }
 table.lt-table--compact th, table.lt-table--compact td { padding: calc(var(--sapContent_Space_Tiny) / 2) var(--sapContent_Space_Tiny); font-size: var(--sapFontSmallSize); }
 table.lt-table--compact th { width: 30%; color: var(--sapContent_LabelColor); background: transparent; }
 del { color: var(--sapNegativeTextColor); text-decoration-thickness: 1px; }
 ins { color: var(--sapPositiveTextColor); text-decoration: none; }
 
 /* Workflow */
-.lt-workflow { display: flex; flex-wrap: wrap; gap: var(--sapContent_Space_Tiny); padding: calc(var(--sapContent_Space_Tiny) * 1.5) var(--sapContent_Space_Small); margin-bottom: var(--sapContent_Space_Small); }
 .lt-list { list-style: none; margin: 0 0 var(--sapContent_Space_Small); padding: 0; }
 .lt-list > li { display: flex; flex-direction: column; gap: calc(var(--sapContent_Space_Tiny) / 2); padding: calc(var(--sapContent_Space_Tiny) * 1.5) 0; border-bottom: 1px solid var(--sapList_BorderColor); }
 .lt-list > li:last-child { border-bottom: 0; }
-.lt-list__ended { opacity: .65; }
 .lt-list p { margin: 0; }
-.lt-details { margin-top: calc(var(--sapContent_Space_Tiny) * 1.5); border-top: 1px solid var(--sapList_BorderColor); padding-top: calc(var(--sapContent_Space_Tiny) * 1.5); }
-.lt-details summary { cursor: pointer; font-weight: 600; min-height: var(--lt-tap); display: flex; align-items: center; }
-.lt-details[open] summary { margin-bottom: calc(var(--sapContent_Space_Tiny) * 1.5); }
-.lt-form--inline { flex-direction: row; flex-wrap: wrap; align-items: flex-end; }
-.lt-form--inline .lt-field { flex: 1 1 200px; }
 .lt-badge--for_action { color: var(--sapBrandColor); background: var(--sapInformationBackground); }
-.lt-notes { list-style: none; margin: 0 0 var(--sapContent_Space_Small); padding: 0; }
-.lt-notes > li { padding: calc(var(--sapContent_Space_Tiny) * 1.5); border-left: 3px solid var(--sapList_BorderColor); margin-bottom: var(--sapContent_Space_Tiny); background: var(--sapNeutralBackground); border-radius: 0 var(--sapButton_BorderCornerRadius) var(--sapButton_BorderCornerRadius) 0; }
-.lt-notes__private { border-left-color: var(--sapCriticalTextColor) !important; }
-.lt-notes p { margin: 0; }
 
 /* Deadlines */
 .lt-due--today { color: var(--sapCriticalTextColor); font-weight: 600; }
@@ -401,25 +515,18 @@ ins { color: var(--sapPositiveTextColor); text-decoration: none; }
 .lt-stat--today.is-set { background: var(--sapWarningBackground); color: var(--sapCriticalTextColor); }
 
 /* Notifications */
-.lt-bell { position: relative; }
-.lt-bell__count {
-    position: absolute; top: 2px; right: 2px;
-    min-width: 1.2rem; height: 1.2rem; padding: 0 .3rem;
-    border-radius: 999px; font-size: var(--sapFontSmallSize); font-weight: 700; line-height: 1.2rem; text-align: center;
-    color: var(--sapContent_BadgeTextColor); background: var(--sapContent_BadgeBackground);
-}
 .lt-notifications form { margin: 0; }
 .lt-notification {
     display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: calc(var(--sapContent_Space_Tiny) * 1.5);
     width: 100%; border: 0; background: transparent; text-align: left; font-weight: 400;
 }
+.lt-notification--overdue svg.lucide { color: var(--sapNegativeTextColor); }
+.lt-notification--due_soon svg.lucide { color: var(--sapCriticalTextColor); }
 .lt-notifications .is-unread .lt-notification { font-weight: 600; }
 .lt-notifications .is-unread .lt-notification::before {
     content: ""; position: absolute; left: 0; width: 4px; height: 1.5rem; border-radius: 2px; background: var(--sapBrandColor);
 }
 .lt-notifications > li { position: relative; padding-left: var(--sapContent_Space_Tiny); }
-.lt-notification--overdue svg.lucide { color: var(--sapNegativeTextColor); }
-.lt-notification--due_soon svg.lucide { color: var(--sapCriticalTextColor); }
 .lt-notification__date { white-space: nowrap; font-size: var(--sapFontSmallSize); }
 @media (max-width: 640px) {
     .lt-stats { grid-template-columns: 1fr; }
@@ -442,7 +549,6 @@ ins { color: var(--sapPositiveTextColor); text-decoration: none; }
 .lt-chart-card.is-empty .lt-chart-card__empty { display: block; }
 .lt-chart-card__data summary { cursor: pointer; font-size: var(--sapFontSmallSize); color: var(--sapContent_LabelColor); margin-top: var(--sapContent_Space_Tiny); }
 .lt-stats-page.is-loading { opacity: .55; transition: opacity var(--lt-transition); }
-.lt-table-toolbar { display: flex; justify-content: flex-end; gap: var(--sapContent_Space_Tiny); margin-bottom: var(--sapContent_Space_Tiny); }
 @media (max-width: 960px) {
     .lt-chart-grid { grid-template-columns: 1fr; }
     .lt-stats--kpi { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -482,29 +588,11 @@ ins { color: var(--sapPositiveTextColor); text-decoration: none; }
 
 /* Autocomplete */
 [data-lt-picker] { position: relative; }
-.lt-picker__results {
-    position: absolute; z-index: 20; top: 100%; left: 0; right: 0;
-    list-style: none; margin: 2px 0 0; padding: calc(var(--sapContent_Space_Tiny) / 2);
-    max-height: 18rem; overflow-y: auto;
-    background: var(--sapGroup_ContentBackground); border: 1px solid var(--sapList_BorderColor); border-radius: var(--sapButton_BorderCornerRadius);
-    box-shadow: var(--sapContent_Shadow2);
-}
-.lt-picker__option {
-    display: flex; flex-direction: column; align-items: flex-start; gap: 0;
-    width: 100%; min-height: var(--lt-tap); border: 0; text-align: left; font-weight: 400;
-}
-.lt-picker__option:focus, .lt-picker__option:hover { background: var(--sapInformationBackground); }
-.lt-picker__label { font-weight: 500; }
-.lt-picker__detail, .lt-picker__empty { font-size: var(--sapFontSmallSize); color: var(--sapContent_LabelColor); }
-.lt-picker__empty { padding: var(--sapContent_Space_Tiny); }
 
 @media (max-width: 860px) {
     .lt-columns { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
-    .lt-form--grid { grid-template-columns: 1fr; }
-    .lt-dl { grid-template-columns: 1fr; gap: 0; }
-    .lt-dl dd { margin-bottom: var(--sapContent_Space_Tiny); }
     .lt-filters__actions { margin-left: 0; }
 }
 
@@ -525,10 +613,9 @@ table.lt-table thead th {
 table.lt-table tbody tr:hover { background: var(--sapInformationBackground); }
 table.lt-table td.lt-num { text-align: right; font-variant-numeric: tabular-nums; }
 
-/* 7. Vendor overrides (DataTables 2, SweetAlert2) ------------------------- */
+/* 7. Vendor overrides (DataTables 2) ------------------------- */
 div.dt-container { color: var(--sapTextColor); font-size: var(--sapFontSize); }
-div.dt-container .dt-search input,
-div.dt-container .dt-length select {
+div.dt-container .dt-search input, div.dt-container .dt-length select {
     min-height: var(--lt-tap); width: auto;
     color: var(--sapTextColor); background: var(--sapGroup_ContentBackground);
     border: 1px solid var(--sapList_BorderColor); border-radius: var(--sapButton_BorderCornerRadius);
@@ -538,8 +625,7 @@ div.dt-container .dt-paging .dt-paging-button {
     border-radius: var(--sapButton_BorderCornerRadius) !important;
     color: var(--sapTextColor) !important;
 }
-div.dt-container .dt-paging .dt-paging-button.current,
-div.dt-container .dt-paging .dt-paging-button.current:hover {
+div.dt-container .dt-paging .dt-paging-button.current, div.dt-container .dt-paging .dt-paging-button.current:hover {
     color: var(--sapButton_Emphasized_TextColor) !important;
     background: var(--sapBrandColor) !important;
     border-color: var(--sapBrandColor) !important;
@@ -547,40 +633,9 @@ div.dt-container .dt-paging .dt-paging-button.current:hover {
 div.dt-container .dt-processing > div:last-child > div { background: var(--sapBrandColor); }
 table.dataTable > tbody > tr.selected > * { box-shadow: inset 0 0 0 9999px var(--sapInformationBackground); color: var(--sapTextColor); }
 
-.swal2-popup { font-family: var(--sapFontFamily); color: var(--sapTextColor); background: var(--sapGroup_ContentBackground); border-radius: var(--sapElement_BorderCornerRadius); }
-.swal2-title, .swal2-html-container { color: var(--sapTextColor); }
-.swal2-styled.swal2-confirm { background: var(--sapBrandColor); }
-.swal2-styled:focus { box-shadow: 0 0 0 3px var(--sapContent_FocusColor); }
-.swal2-styled.swal2-confirm.lt-swal-danger { background: var(--sapNegativeTextColor); }
-.swal2-input-label { color: var(--sapTextColor); }
-.swal2-textarea { color: var(--sapTextColor); background: var(--sapGroup_ContentBackground); border-color: var(--sapList_BorderColor); font-family: var(--sapFontFamily); }
-
 /* 8. Responsive ----------------------------------------------------------- */
 @media (max-width: 1024px) {
     .lt-main { padding: var(--sapContent_Space_Small); }
-    .lt-user { display: none; }
-}
-
-.lt-nav-toggle { display: none; }
-
-@media (max-width: 860px) {
-    .lt-nav-toggle { display: inline-flex; }
-
-    .lt-sidebar {
-        position: fixed; z-index: 40;
-        top: var(--lt-topbar-h); bottom: 0; left: 0;
-        width: min(85vw, 300px);
-        transform: translateX(-100%);
-        transition: transform var(--lt-transition);
-        overflow-y: auto;
-        box-shadow: var(--sapContent_Shadow2);
-    }
-    .lt-nav-open .lt-sidebar { transform: none; }
-    .lt-nav-open .lt-backdrop {
-        display: block; position: fixed; inset: var(--lt-topbar-h) 0 0 0; z-index: 35;
-        background: color-mix(in srgb, var(--sapBlockLayer_Background) 45%, transparent);
-    }
-    .lt-topbar__tools .lt-inline-form label { display: none; }
 }
 
 /* Stacked "card" rows for tables on small screens (labels set by lt-tables.js). */
@@ -588,8 +643,6 @@ table.dataTable > tbody > tr.selected > * { box-shadow: inset 0 0 0 9999px var(-
     :root { --lt-tap: 44px; }
     .lt-main { padding: calc(var(--sapContent_Space_Tiny) * 1.5); }
     .lt-card { padding: var(--sapContent_Space_Small); }
-    .lt-topbar { padding: 0 var(--sapContent_Space_Tiny); gap: calc(var(--sapContent_Space_Tiny) / 2); }
-    .lt-brand span { display: none; }
 
     table.lt-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
     table.lt-table, table.lt-table tbody, table.lt-table tr, table.lt-table td { display: block; width: 100%; }
@@ -613,7 +666,7 @@ table.dataTable > tbody > tr.selected > * { box-shadow: inset 0 0 0 9999px var(-
 
 /* 9. Print ---------------------------------------------------------------- */
 @media print {
-    .lt-topbar, .lt-sidebar, .lt-backdrop, .lt-offline-banner, .dt-paging, .dt-search, .dt-length, button { display: none !important; }
+    ui5-shellbar, ui5-side-navigation, .lt-offline-banner, .lt-flash, .dt-paging, .dt-search, .dt-length, button { display: none !important; }
     .lt-main { padding: 0; max-width: none; }
     body { background: var(--sapBaseColor); color: var(--sapTextColor); }
     .lt-card { box-shadow: none; border: 0; padding: 0; }

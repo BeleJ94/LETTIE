@@ -41,6 +41,12 @@ final class TableRequest
         );
     }
 
+    /** First page of a list built by the application itself (cards, exports), not from a request. */
+    public static function first(int $perPage, string $sort, string $dir = 'asc'): self
+    {
+        return new self(1, max(1, min($perPage, self::MAX_PER_PAGE)), $sort, strtolower($dir) === 'desc' ? 'DESC' : 'ASC', null);
+    }
+
     public function offset(): int
     {
         return ($this->page - 1) * $this->perPage;

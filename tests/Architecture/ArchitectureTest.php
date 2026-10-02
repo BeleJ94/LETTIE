@@ -80,7 +80,6 @@ final class ArchitectureTest extends TestCase
             'jquery-3.7.1' => ['jquery.min.js'],
             'datatables-2.1.8' => ['dataTables.min.js', 'dataTables.dataTables.min.css'],
             'chartjs-4.4.7' => ['chart.umd.js'],
-            'sweetalert2-11.14.5' => ['sweetalert2.min.js', 'sweetalert2.min.css'],
             'lucide-0.460.0' => ['lucide.min.js'],
             'exceljs-4.4.0' => ['exceljs.min.js'],
             'pdfmake-0.2.14' => ['pdfmake.min.js', 'vfs_fonts.js'],
@@ -165,7 +164,48 @@ final class ArchitectureTest extends TestCase
         preg_match_all('/(--lt-[a-z0-9-]+)\s*:/', $css, $m);
         $local = array_values(array_unique($m[1]));
         sort($local);
-        self::assertSame(['--lt-content-max', '--lt-sidebar-w', '--lt-tap', '--lt-topbar-h', '--lt-transition'], $local, 'Only layout dimensions may be local variables');
+        self::assertSame(['--lt-content-max', '--lt-tap', '--lt-transition'], $local, 'Only layout dimensions may be local variables');
+    }
+
+    /** Screens still built with the old components. This list may only shrink (docs/FIORI_MIGRATION_PLAN.md). */
+    private const NOT_MIGRATED_YET = [
+        'views/delegations/index.php',
+        'views/notifications/index.php',
+        'views/statistics/index.php',
+    ];
+
+    /** docs/FIORI_DESIGN.md §4: every screen declares its floorplan, or "None" with its reason. */
+    public function testEveryScreenDeclaresAnAllowedFloorplan(): void
+    {
+        $allowed = ['Launchpad', 'ListReport', 'ObjectPage', 'Worklist', 'OverviewPage', 'AnalyticalListPage', 'Wizard', 'None'];
+        $declared = [];
+        foreach (self::phpFiles('views') as $file) {
+            $relative = str_replace('\\', '/', substr($file, strlen(self::root()) + 1));
+            // Partials and layouts are parts of screens, not screens.
+            if (preg_match('#^views/(partials|layouts)/|/_[a-z_-]+\.php$#', $relative) === 1) {
+                continue;
+            }
+            $found = preg_match('/@floorplan\s+(\w+)(\s+—\s+\S.*)?/u', (string) file_get_contents($file), $m) === 1;
+            if (in_array($relative, self::NOT_MIGRATED_YET, true)) {
+                self::assertFalse($found, "{$relative} declares a floorplan: remove it from NOT_MIGRATED_YET");
+                continue;
+            }
+            self::assertTrue($found, "{$relative} must declare its floorplan (@floorplan …)");
+            self::assertContains($m[1], $allowed, "Unknown floorplan in {$relative}");
+            if ($m[1] === 'None') {
+                self::assertNotEmpty($m[2] ?? '', "{$relative}: \"@floorplan None\" must give its reason");
+            }
+            $declared[$relative] = $m[1];
+        }
+        self::assertSame('Launchpad', $declared['views/home/index.php'] ?? null, 'The home page is the Launchpad');
+        self::assertSame(
+            ['views/auth/login.php', 'views/errors/error.php', 'views/mails/slip.php'],
+            array_keys(array_filter($declared, static fn (string $floorplan): bool => $floorplan === 'None')),
+            'Only these three screens are outside the floorplans',
+        );
+        foreach (self::NOT_MIGRATED_YET as $relative) {
+            self::assertFileExists(self::root() . '/' . $relative, 'NOT_MIGRATED_YET lists a file that no longer exists');
+        }
     }
 
     public function testViewsContainNoInlineScriptsOrStyles(): void

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repositories;
 
 use App\Domain\Mail\MailStatus;
+use DateTimeImmutable;
 
 /** Read models for deadlines: reminders, dashboard counters and lists. */
 final class DeadlineRepository extends Repository
@@ -98,6 +99,36 @@ final class DeadlineRepository extends Repository
         $stmt->execute($params);
         $row = $stmt->fetch() ?: [];
         return ['overdue' => (int) ($row['overdue'] ?? 0), 'today' => (int) ($row['today'] ?? 0), 'week' => (int) ($row['week'] ?? 0)];
+    }
+
+    /**
+     * Workload counters of the scope for the home page: incoming mail waiting for a first
+     * assignment, mail still being processed, and mail registered since $dayStart (UTC).
+     *
+     * @return array{unassigned: int, pending: int, registered_today: int}
+     */
+    public function workload(DateTimeImmutable $dayStart): array
+    {
+        // Two queries so that each one uses an index: pending mail by (site_id, status), then today's registrations.
+        $params = ['registered' => MailStatus::Registered->value];
+        $stmt = $this->pdo->prepare(
+            "SELECT COALESCE(SUM(m.status = :registered AND m.direction = 'incoming'), 0) AS unassigned, COUNT(*) AS pending
+             FROM mails m WHERE " . $this->notFinished($params) . ' AND ' . $this->scopeSql('m.site_id', $params)
+        );
+        $stmt->execute($params);
+        $row = $stmt->fetch() ?: [];
+
+        $params = ['day_start' => $dayStart->format('Y-m-d H:i:s')];
+        $today = $this->pdo->prepare(
+            'SELECT COUNT(*) FROM mails m WHERE m.created_at >= :day_start AND ' . $this->scopeSql('m.site_id', $params)
+        );
+        $today->execute($params);
+
+        return [
+            'unassigned' => (int) ($row['unassigned'] ?? 0),
+            'pending' => (int) ($row['pending'] ?? 0),
+            'registered_today' => (int) $today->fetchColumn(),
+        ];
     }
 
     /**

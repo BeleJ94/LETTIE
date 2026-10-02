@@ -12,21 +12,21 @@ export const LOCALES = ['fr', 'en'];
 
 /** @ui5/webcomponents (main) */
 export const MAIN = [
-    'Bar', 'Breadcrumbs', 'BreadcrumbsItem', 'BusyIndicator', 'Button', 'Card', 'CardHeader',
-    'CheckBox', 'DatePicker', 'DateTimePicker', 'Dialog', 'FileUploader', 'Form', 'FormGroup',
+    'Avatar', 'Bar', 'Breadcrumbs', 'BreadcrumbsItem', 'BusyIndicator', 'Button', 'Card', 'CardHeader',
+    'CheckBox', 'ComboBox', 'ComboBoxItem', 'DatePicker', 'DateTimePicker', 'Dialog', 'FileUploader', 'Form', 'FormGroup',
     'FormItem', 'Icon', 'Input', 'Label', 'Link', 'List', 'ListItemCustom', 'ListItemStandard',
-    'MessageStrip', 'Option', 'Panel', 'Popover', 'Select', 'SuggestionItem', 'Switch',
-    'Table', 'TableCell', 'TableGrowing', 'TableHeaderCell', 'TableHeaderRow', 'TableRow',
-    'Tag', 'Text', 'TextArea', 'Title', 'Toast', 'Toolbar', 'ToolbarButton', 'ToolbarSpacer',
+    'MessageStrip', 'Option', 'Panel', 'Popover', 'Select', 'StepInput', 'SuggestionItem', 'Switch', 'Tab', 'TabContainer',
+    'Table', 'TableCell', 'TableGrowing', 'TableHeaderCell', 'TableHeaderRow', 'TableRow', 'TableSelectionMulti',
+    'Tag', 'Text', 'TextArea', 'Title', 'Toast', 'Toolbar', 'ToolbarButton', 'ToolbarSeparator', 'ToolbarSpacer',
 ];
 
 /** @ui5/webcomponents-fiori */
 export const FIORI = [
-    'DynamicPage', 'DynamicPageHeader', 'DynamicPageTitle', 'IllustratedMessage',
+    'DynamicPage', 'DynamicPageHeader', 'DynamicPageTitle', 'IllustratedMessage', 'NavigationLayout',
     'NotificationList', 'NotificationListGroupItem', 'NotificationListItem',
-    'ShellBar', 'ShellBarItem', 'SideNavigation', 'SideNavigationGroup', 'SideNavigationItem',
+    'ShellBar', 'ShellBarBranding', 'ShellBarItem', 'ShellBarSearch', 'SideNavigation', 'SideNavigationGroup', 'SideNavigationItem',
     'SideNavigationSubItem', 'Timeline', 'TimelineItem', 'UploadCollection', 'UploadCollectionItem',
-    'Wizard', 'WizardStep',
+    'UserMenu', 'UserMenuAccount', 'UserMenuItem', 'Wizard', 'WizardStep',
 ];
 
 /** @ui5/webcomponents-fiori illustrations (empty states, error pages). */
@@ -37,12 +37,13 @@ export const ILLUSTRATIONS = [
 
 /** @ui5/webcomponents-icons (SAP icons, <ui5-icon name="…">). */
 export const ICONS = [
-    'accept', 'add', 'alert', 'appointment-2', 'attachment', 'bar-chart', 'bell', 'business-card',
+    'accept', 'activities', 'add', 'alert', 'begin', 'chain-link', 'folder-full', 'pending', 'undo', 'appointment-2', 'attachment', 'bar-chart', 'bell', 'business-card',
     'calendar', 'close-command-field', 'decline', 'delete', 'document', 'document-text', 'download',
     'edit', 'email', 'employee', 'error', 'excel-attachment', 'filter', 'history', 'home',
     'hint', 'inbox', 'information', 'journey-arrive', 'journey-depart', 'light-mode', 'dark-mode',
     'log', 'menu2', 'message-error', 'message-information', 'message-success', 'message-warning',
     'navigation-right-arrow', 'notes', 'pdf-attachment', 'print', 'refresh', 'response', 'save',
-    'search', 'settings', 'share-2', 'sort', 'synchronize', 'user-settings', 'upload', 'visits',
+    'search', 'settings', 'share-2', 'slim-arrow-down', 'sort', 'synchronize', 'user-settings', 'upload', 'visits',
+    'add-document', 'away', 'course-book', 'date-time', 'globe', 'lateness', 'line-chart', 'paper-plane',
     'action-settings', 'collections-management', 'group', 'person-placeholder', 'locked', 'workflow-tasks',
 ];

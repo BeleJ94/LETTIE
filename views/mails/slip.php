@@ -1,5 +1,7 @@
 <?php
 /**
+ * @floorplan None — bordereau : document imprimable
+ *
  * Registration slip ("bordereau d'enregistrement"): printed and attached to the paper mail.
  *
  * @var App\Core\View $this

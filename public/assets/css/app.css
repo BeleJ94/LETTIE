@@ -75,6 +75,47 @@ body:has(> .lt-shell) { overflow: hidden; }
 .lt-shell { display: block; height: 100%; }
 .lt-shell:not(:defined) > [slot] { display: none; }
 
+/* Frame colours (docs/FIORI_DESIGN.md §3): the top bar takes the brand blue of the login page and
+   the side navigation a light tint of it. Every colour is derived from the theme; the high contrast
+   themes keep their own frame. */
+html:not([data-lt-theme$="_hcb"]):not([data-lt-theme$="_hcw"]) ui5-shellbar {
+    --sapShellColor: color-mix(in srgb, var(--sapButton_Emphasized_Background) 72%, black);
+    --sapShell_Background: var(--sapShellColor);
+    --sapShell_TextColor: var(--sapButton_Emphasized_TextColor);
+    --sapShell_Hover_Background: color-mix(in srgb, var(--sapButton_Emphasized_TextColor) 16%, transparent);
+    --sapShell_Active_Background: color-mix(in srgb, var(--sapButton_Emphasized_TextColor) 26%, transparent);
+    --sapShell_Active_TextColor: var(--sapButton_Emphasized_TextColor);
+    --sapShell_SubBrand_TextColor: var(--sapButton_Emphasized_TextColor);
+    /* Search: the magnifier, then a translucent field on the bar. */
+    --sapShell_InteractiveTextColor: var(--sapButton_Emphasized_TextColor);
+    --sapShell_InteractiveBackground: color-mix(in srgb, var(--sapButton_Emphasized_TextColor) 14%, transparent);
+    --sapShell_InteractiveBorderColor: color-mix(in srgb, var(--sapButton_Emphasized_TextColor) 45%, transparent);
+    --sapField_TextColor: var(--sapButton_Emphasized_TextColor);
+    --sapField_PlaceholderTextColor: color-mix(in srgb, var(--sapButton_Emphasized_TextColor) 75%, transparent);
+    --sapContent_IconColor: var(--sapButton_Emphasized_TextColor);
+    --sapButton_Lite_TextColor: var(--sapButton_Emphasized_TextColor);
+    --sapButton_Lite_Hover_Background: var(--sapShell_Hover_Background);
+    --sapButton_Lite_Active_Background: var(--sapShell_Active_Background);
+    --sapContent_FocusColor: var(--sapButton_Emphasized_TextColor);
+}
+html[data-lt-theme="sap_horizon_dark"] ui5-shellbar {
+    --sapShellColor: color-mix(in srgb, var(--sapButton_Emphasized_Background) 38%, black);
+    --sapShell_TextColor: var(--sapTextColor);
+    --sapShell_Active_TextColor: var(--sapTextColor);
+    --sapShell_SubBrand_TextColor: var(--sapTextColor);
+    --sapShell_InteractiveTextColor: var(--sapTextColor);
+    --sapField_TextColor: var(--sapTextColor);
+    --sapContent_IconColor: var(--sapTextColor);
+    --sapButton_Lite_TextColor: var(--sapTextColor);
+    --sapContent_FocusColor: var(--sapTextColor);
+}
+html:not([data-lt-theme$="_hcb"]):not([data-lt-theme$="_hcw"]) #lt-sidenav {
+    --sapList_Background: color-mix(in srgb, var(--sapButton_Emphasized_Background) 7%, var(--sapBaseColor));
+    --sapList_Hover_Background: color-mix(in srgb, var(--sapButton_Emphasized_Background) 14%, var(--sapBaseColor));
+    --sapList_SelectionBackgroundColor: color-mix(in srgb, var(--sapButton_Emphasized_Background) 20%, var(--sapBaseColor));
+    --sapList_Hover_SelectionBackground: color-mix(in srgb, var(--sapButton_Emphasized_Background) 26%, var(--sapBaseColor));
+}
+
 .lt-main {
     box-sizing: border-box;
     width: 100%; max-width: var(--lt-content-max); min-height: 100%;

@@ -1,16 +1,16 @@
-# Local development under http://localhost/Lettie/ (XAMPP).
-# Every request is served from public/: .env, vendor/, storage/, app/… are never reachable.
-# In production, point the site's document root to public/ instead (see docs/scheduled-task-plesk.md).
-# Requires APP_BASE_PATH=/Lettie in .env.
+# Used when the web server's document root is the project folder itself: local development under
+# http://localhost/Lettie/ (XAMPP, APP_BASE_PATH=/Lettie) or a host whose root cannot be changed
+# (APP_BASE_PATH empty). Every request is served from public/: .env, vendor/, storage/, app/… are
+# never reachable. Prefer pointing the document root to public/ (see docs/scheduled-task-plesk.md).
+# No folder name is written here: the same file works at any address.
 
 Options -Indexes
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /Lettie/
 
     # Anything not already inside public/ is mapped into it.
-    RewriteCond %{REQUEST_URI} !^/Lettie/public/
+    RewriteRule ^public/ - [L]
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
 

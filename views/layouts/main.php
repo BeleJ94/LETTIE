@@ -35,6 +35,8 @@ $navSteering = [
 ];
 $navFixed = [
     ['path' => '/delegations', 'icon' => 'away', 'label' => 'nav.delegations', 'permission' => Permission::MailView],
+    ['path' => '/users', 'icon' => 'group', 'label' => 'nav.users', 'permission' => Permission::UsersManage],
+    ['path' => '/organization', 'icon' => 'collections-management', 'label' => 'nav.organization', 'permission' => Permission::SettingsManage],
     ['path' => '/retention-rules', 'icon' => 'history', 'label' => 'nav.retention', 'permission' => Permission::SettingsManage],
 ];
 $allowed = static fn (array $items): array => $currentUser === null ? [] : array_values(array_filter(
@@ -155,6 +157,7 @@ $otherLocale = $locale === 'fr' ? 'en' : 'fr';
             subtitle-text="<?= e(__($currentUser->role->labelKey())) ?>"
             description="<?= e($currentUser->email) ?>"
             avatar-initials="<?= e($initials) ?>" avatar-color-scheme="Accent6"></ui5-user-menu-account>
+        <ui5-user-menu-item icon="employee" text="<?= e(__('profile.title')) ?>" data-lt-href="/profile"></ui5-user-menu-item>
         <ui5-user-menu-item icon="dark-mode" text="<?= e(__('nav.dark_theme')) ?>" data-lt-theme-toggle></ui5-user-menu-item>
         <ui5-user-menu-item icon="globe" text="<?= e(__('locale.label')) ?>">
             <?php foreach (['fr', 'en'] as $code): ?>

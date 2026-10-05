@@ -7,6 +7,8 @@ use App\Core\Container;
 use App\Core\Csrf;
 use App\Core\Env;
 use App\Core\FileStorage;
+use App\Core\Mailer;
+use App\Core\SmtpMailer;
 use App\Domain\Attachment\AttachmentPolicy;
 use App\Core\Session;
 use App\Core\Transaction;
@@ -15,9 +17,13 @@ use App\Domain\SiteScope;
 use App\Middleware\Authenticate;
 use App\Middleware\Authorize;
 use App\Middleware\RedirectIfAuthenticated;
+use App\Repositories\ActivityLogRepository;
 use App\Repositories\LoginAttemptRepository;
+use App\Repositories\PasswordResetRepository;
 use App\Repositories\UserRepository;
+use App\Services\AuditTrail;
 use App\Services\AuthService;
+use App\Services\PasswordResetService;
 
 /** Application services (the core ones are wired in App\Core\Kernel). */
 return static function (Container $container): void {
@@ -33,6 +39,21 @@ return static function (Container $container): void {
         new LoginAttemptRepository($c->get(PDO::class), SiteScope::system()),
         $c->get(Session::class),
         $c->get(Csrf::class),
+        $c->get(Transaction::class),
+        $c->get(Clock::class),
+        new LoginThrottle(),
+    ));
+
+    // E-mail (password recovery): nothing is sent, and the feature hides, until MAIL_HOST and MAIL_FROM are set.
+    $container->set(Mailer::class, static fn (Container $c): Mailer => SmtpMailer::fromEnv($c->get(Env::class)));
+
+    // Password recovery also runs before any user is known: system scope, stated explicitly.
+    $container->set(PasswordResetService::class, static fn (Container $c): PasswordResetService => new PasswordResetService(
+        new UserRepository($c->get(PDO::class), SiteScope::system()),
+        new PasswordResetRepository($c->get(PDO::class), SiteScope::system()),
+        new LoginAttemptRepository($c->get(PDO::class), SiteScope::system()),
+        $c->get(Mailer::class),
+        new AuditTrail(new ActivityLogRepository($c->get(PDO::class), SiteScope::system()), $c->get(Clock::class)),
         $c->get(Transaction::class),
         $c->get(Clock::class),
         new LoginThrottle(),

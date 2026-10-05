@@ -27,6 +27,7 @@ final class Ui5
         ],
         'priority' => ['urgent' => 'Negative', 'high' => 'Critical', 'normal' => 'Neutral', 'low' => 'Neutral'],
         'direction' => ['incoming' => 'Set2', 'outgoing' => 'Set2'],
+        'user_status' => ['active' => 'Positive', 'inactive' => 'Neutral'],
     ];
 
     /** Colour scheme of the "Set2" tags (categories, not states). */

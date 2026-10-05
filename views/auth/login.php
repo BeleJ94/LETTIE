@@ -10,25 +10,15 @@
 <?php $this->start('main_class') ?>lt-main--bleed<?php $this->stop() ?>
 
 <div class="lt-login-page">
-    <aside class="lt-login-hero" aria-labelledby="hero-title">
-        <div class="lt-login-hero__text">
-            <h2 id="hero-title" class="lt-login-hero__title"><?= e(__('auth.hero.title')) ?></h2>
-            <p class="lt-login-hero__subtitle"><?= e(__('auth.hero.subtitle')) ?></p>
-        </div>
-
-        <img class="lt-login-hero__art" src="<?= e($basePath) ?>/assets/img/login-hero.svg" alt="" width="640" height="520">
-
-        <ul class="lt-login-hero__features">
-            <?php foreach (['register' => 'scan-line', 'assign' => 'route', 'deadline' => 'calendar-clock', 'trace' => 'shield-check'] as $key => $icon): ?>
-                <li><i data-lucide="<?= e($icon) ?>"></i><span><?= e(__('auth.hero.features.' . $key)) ?></span></li>
-            <?php endforeach; ?>
-        </ul>
-    </aside>
+    <?= $this->partial('auth/_hero') ?>
 
     <section class="lt-login-panel" aria-labelledby="login-title">
         <div class="lt-login-form">
             <h1 id="login-title"><?= e(__('auth.title')) ?></h1>
             <p class="lt-muted"><?= e(__('auth.intro')) ?></p>
+            <?php if (($notice ?? null) !== null): ?>
+                <p class="lt-alert lt-alert--success" role="status"><?= e($notice) ?></p>
+            <?php endif; ?>
             <?php if ($error !== null): ?>
                 <p class="lt-alert lt-alert--error" role="alert"><?= e($error) ?></p>
             <?php endif; ?>
@@ -50,6 +40,9 @@
                 </div>
                 <button type="submit" class="lt-login-submit"><i data-lucide="log-in"></i><?= e(__('auth.submit')) ?></button>
             </form>
+            <?php if ($canRecover ?? false): ?>
+                <p class="lt-login-footnote"><a href="<?= e($basePath) ?>/password/forgot"><?= e(__('reset.link')) ?></a></p>
+            <?php endif; ?>
             <p class="lt-login-footnote"><i data-lucide="shield-check"></i> <?= e(__('auth.footnote')) ?></p>
         </div>
     </section>

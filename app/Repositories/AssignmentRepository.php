@@ -61,6 +61,23 @@ final class AssignmentRepository extends Repository
         return (int) $this->pdo->lastInsertId();
     }
 
+    /**
+     * Mails a user is currently responsible for (active "for action" assignment), oldest first.
+     *
+     * @return list<int>
+     */
+    public function activeMailIdsForUser(int $userId): array
+    {
+        $params = ['user' => $userId];
+        $stmt = $this->pdo->prepare(
+            "SELECT a.mail_id FROM assignments a JOIN mails m ON m.id = a.mail_id
+             WHERE a.user_id = :user AND a.role = 'for_action' AND a.status = 'active' AND " . $this->scopeSql('m.site_id', $params) . '
+             ORDER BY a.mail_id'
+        );
+        $stmt->execute($params);
+        return array_map('intval', $stmt->fetchAll(\PDO::FETCH_COLUMN));
+    }
+
     public function findById(int $id): ?Assignment
     {
         $params = ['id' => $id];

@@ -305,6 +305,7 @@ table.lt-table.lt-dt thead th {
 table.lt-table.lt-dt tbody tr { cursor: pointer; }
 /* Rows that open nothing: settings lists rendered by the server, lists without an object page. */
 table.lt-table.lt-dt.lt-dt--static tbody tr { cursor: default; }
+table.lt-table.lt-dt td.lt-dt__wrap { white-space: normal; }
 table.lt-table.lt-dt .lt-dt__actions { width: 1%; padding-block: 0; text-align: right; }
 .lt-table-header--next { margin-top: var(--sapContent_Space_Small); }
 table.lt-table.lt-dt tbody tr:hover { background: var(--sapList_Hover_Background); }
@@ -388,6 +389,7 @@ textarea { min-height: 6rem; resize: vertical; }
 }
 .lt-alert--error { color: var(--sapNegativeTextColor); background: var(--sapErrorBackground); border-color: currentColor; }
 .lt-alert--warning { color: var(--sapCriticalTextColor); background: var(--sapWarningBackground); border-color: currentColor; }
+.lt-alert--success { color: var(--sapPositiveTextColor); background: var(--sapSuccessBackground); border-color: currentColor; }
 
 .lt-badge {
     display: inline-block;

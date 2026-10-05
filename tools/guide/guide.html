@@ -91,6 +91,7 @@ code { font-family: "72", monospace; background: #f1f3f6; padding: 0 1mm; border
         <li>Registre et exports</li>
         <li>Statistiques</li>
         <li>Sur téléphone, thème sombre</li>
+        <li>Administration : utilisateurs</li>
         <li>Administration : conservation</li>
         <li>Annexe : les statuts d'un courrier</li>
     </ol>
@@ -251,7 +252,28 @@ code { font-family: "72", monospace; background: #f1f3f6; padding: 0 1mm; border
 <figure><img src="screenshots/16-theme-sombre.png" alt="Liste du courrier en thème sombre"><figcaption>La liste du courrier en thème sombre.</figcaption></figure>
 <p>Un bandeau vous avertit si la connexion est perdue : les modifications ne peuvent alors pas être enregistrées.</p>
 
-<h2><span class="section-number">14</span>Administration : conservation</h2>
+<h2><span class="section-number">14</span>Administration : utilisateurs</h2>
+<p>L'écran <span class="ui">Utilisateurs</span>, en bas du menu, est réservé à l'administrateur. Il liste les comptes avec leur rôle, leur site, leur service et leur dernière connexion ; la recherche porte sur le nom, le prénom et l'e-mail.</p>
+<ul>
+    <li><strong>Créer un compte</strong> : bouton <span class="ui">Créer</span>. Indiquez l'identité, le rôle, le site, le service et un mot de passe d'au moins 12 caractères, à transmettre à la personne par un moyen sûr.</li>
+    <li><strong>Modifier un compte</strong> : cliquez sur sa ligne. Le rôle détermine ce que la personne voit et peut faire (tableau du chapitre 2).</li>
+    <li><strong>Désactiver un compte</strong> : décochez <span class="ui">Compte actif</span>. La personne ne peut plus se connecter ; ses courriers et son historique sont conservés. Un compte n'est jamais supprimé.</li>
+    <li><strong>Mot de passe oublié</strong> : sur la fiche du compte, <span class="ui">Nouveau mot de passe</span> remplace l'ancien.</li>
+</ul>
+<p>Vous ne pouvez ni désactiver votre propre compte ni changer votre propre rôle : un autre administrateur doit le faire.</p>
+<ul>
+    <li><strong>Désactiver un compte qui a des courriers en cours</strong> : choisissez la personne qui les reprend (champ <span class="ui">Réaffecter ses courriers à</span>) ; chaque courrier lui est réaffecté et l'opération figure dans son historique.</li>
+    <li><strong>Compte verrouillé</strong> après cinq essais manqués : la fiche l'indique ; <span class="ui">Débloquer</span> lève le verrou sans attendre les 15 minutes.</li>
+    <li><strong>Fiche du compte</strong> : dernières tentatives de connexion et historique des modifications (qui, quand, quoi).</li>
+    <li><strong>Importer</strong> : un fichier CSV (prenom;nom;email;role;site;service) est d'abord contrôlé ligne par ligne, puis les lignes valides sont créées ; chaque compte reçoit un mot de passe provisoire affiché une seule fois.</li>
+    <li><strong>Rôles</strong> : le tableau de ce que chaque rôle permet.</li>
+    <li><strong>Sites et services</strong> (menu du bas) : créer, renommer, désactiver. Un site ou un service qui a encore des comptes actifs ne peut pas être désactivé.</li>
+</ul>
+<h3>Mon profil</h3>
+<p>Le menu de vos initiales, en haut à droite, ouvre <span class="ui">Mon profil</span> : vous y changez votre mot de passe (les sessions ouvertes sur vos autres appareils sont alors fermées) et activez la <strong>double authentification</strong> : à chaque connexion, un code à 6 chiffres donné par une application de votre téléphone est demandé en plus du mot de passe. Un mot de passe choisi par un administrateur doit être remplacé à la première connexion.</p>
+<p>Si l'envoi d'e-mails est configuré, le lien <span class="ui">Mot de passe oublié ?</span> de la page de connexion envoie un lien valable 30 minutes pour en choisir un nouveau.</p>
+
+<h2><span class="section-number">15</span>Administration : conservation</h2>
 <figure><img src="screenshots/13-conservation.png" alt="Règles de conservation"><figcaption>Les règles de conservation et le suivi de la tâche quotidienne.</figcaption></figure>
 <p>Les <strong>règles de conservation</strong> s'appliquent chaque nuit aux courriers clos depuis la durée indiquée :</p>
 <ul>
@@ -262,7 +284,7 @@ code { font-family: "72", monospace; background: #f1f3f6; padding: 0 1mm; border
 <div class="warning"><strong>Aucune destruction automatique</strong>Lettie ne supprime jamais un courrier de lui-même. L'élimination d'un dossier reste une décision humaine, conformément aux règles d'archivage de votre organisation.</div>
 <p>L'encadré <strong>Tâche quotidienne</strong> indique les dernières exécutions des rappels et des règles. S'il signale que la tâche n'a jamais tourné, prévenez votre service informatique.</p>
 
-<h2><span class="section-number">15</span>Annexe : les statuts d'un courrier</h2>
+<h2><span class="section-number">16</span>Annexe : les statuts d'un courrier</h2>
 <table>
     <thead><tr><th>Statut</th><th>Signification</th><th>Actions possibles</th></tr></thead>
     <tbody>

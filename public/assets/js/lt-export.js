@@ -36,6 +36,15 @@
             col('priority', 'enum:priority', 10),
             col('status', 'enum:status', 18)
         ],
+        users: [
+            col('name', 'text', 26, true),
+            col('email', 'text', 32, true),
+            col('role', 'text', 18),
+            col('site_name', 'text', 26),
+            col('department_name', 'text', 22),
+            col('status', 'enum:user_status', 10),
+            col('last_login_at', 'datetime', 16)
+        ],
         register_incoming: [
             col('reference', 'text', 16),
             col('received_at', 'datetime', 16),

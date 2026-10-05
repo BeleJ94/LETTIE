@@ -199,9 +199,9 @@ final class ArchitectureTest extends TestCase
         }
         self::assertSame('Launchpad', $declared['views/home/index.php'] ?? null, 'The home page is the Launchpad');
         self::assertSame(
-            ['views/auth/login.php', 'views/errors/error.php', 'views/mails/slip.php'],
+            ['views/auth/code.php', 'views/auth/forgot.php', 'views/auth/login.php', 'views/auth/reset.php', 'views/errors/error.php', 'views/mails/slip.php'],
             array_keys(array_filter($declared, static fn (string $floorplan): bool => $floorplan === 'None')),
-            'Only these three screens are outside the floorplans',
+            'Only the sign-in screens, the error page and the slip are outside the floorplans',
         );
         foreach (self::NOT_MIGRATED_YET as $relative) {
             self::assertFileExists(self::root() . '/' . $relative, 'NOT_MIGRATED_YET lists a file that no longer exists');

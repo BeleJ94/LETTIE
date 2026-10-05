@@ -17,6 +17,8 @@ use Closure;
 final class Authenticate implements Middleware
 {
     public const INTENDED_KEY = 'auth.intended';
+    /** Screens that stay reachable while the password must be replaced. */
+    private const PASSWORD_CHANGE_PATHS = ['/profile', '/profile/password', '/logout'];
 
     public function __construct(
         private readonly AuthService $auth,
@@ -40,6 +42,13 @@ final class Authenticate implements Middleware
         }
 
         $this->view->share('currentUser', $user);
+        // A password chosen by an administrator is replaced before anything else.
+        if ($user->mustChangePassword && !in_array($request->path(), self::PASSWORD_CHANGE_PATHS, true)) {
+            if ($request->wantsJson()) {
+                throw HttpException::forbidden();
+            }
+            return Response::redirect($this->url->route('profile'));
+        }
         return $next($request);
     }
 }

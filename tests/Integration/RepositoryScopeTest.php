@@ -42,6 +42,7 @@ final class RepositoryScopeTest extends TestCase
     private const GLOBAL_TABLES = [
         Repositories\LoginAttemptRepository::class => 'login attempts are per email/IP',
         Repositories\NotificationRepository::class => 'filtered by recipient user id',
+        Repositories\PasswordResetRepository::class => 'used before sign-in; refuses any scope but the system one',
         Repositories\ScheduledRunRepository::class => 'technical task log',
     ];
 
@@ -168,11 +169,33 @@ final class RepositoryScopeTest extends TestCase
         self::assertSame(['Dept DA'], array_column($departments->listActive(), 'name'));
         self::assertNull($departments->findName(self::b('dept')));
         self::assertNull($departments->findSiteId(self::b('dept')));
+        self::assertSame(['Dept DA'], array_column($departments->rows(), 'name'));
+        self::assertNull($departments->find(self::b('dept')));
+        self::assertFalse($departments->codeTaken(self::b('site'), 'DB'), 'codes of another site are not visible');
+        $this->assertOutOfScope(fn () => $departments->create(self::b('site'), 'X', 'X'));
+        $departments->update(self::b('dept'), 'ZZ', 'Renamed');
+        $departments->setActive(self::b('dept'), false);
+        self::assertSame(['DB', '1'], array_map('strval', TestDatabase::pdo()->query('SELECT code, is_active FROM departments WHERE id = ' . self::b('dept'))->fetch(\PDO::FETCH_NUM)), 'a department out of scope is not modified');
 
         self::assertSame([self::$ids['A']['site']], array_values(array_unique(array_column(self::repo(Repositories\UserRepository::class)->listActive(), 'site_id'))));
         self::assertNull(self::repo(Repositories\UserRepository::class)->findById(self::b('user')));
+        $users = self::repo(Repositories\UserRepository::class);
+        $page = $users->page(\App\Core\TableRequest::first(100, 'name'), null, null, true);
+        self::assertSame($users->countActive(), $page->toArray()['meta']['total'], 'only the accounts of site A are listed and counted');
+        self::assertSame([], $users->page(\App\Core\TableRequest::first(100, 'name'), null, self::b('site'), true)->toArray()['data'], 'the site filter cannot widen the scope');
+        $foreign = new \App\Domain\Auth\UserInput('X', 'Y', 'x@example.org', \App\Domain\Auth\Role::Agent, self::b('site'), null);
+        $this->assertOutOfScope(fn () => $users->update(self::$ids['A']['user'], $foreign));
+        $own = new \App\Domain\Auth\UserInput('X', 'Y', 'x@example.org', \App\Domain\Auth\Role::Agent, self::$ids['A']['site'], null);
+        $users->update(self::b('user'), $own);
+        self::assertNotSame('x@example.org', TestDatabase::pdo()->query('SELECT email FROM users WHERE id = ' . self::b('user'))->fetchColumn(), 'an account of another site is not modified');
 
         $sites = self::repo(Repositories\SiteRepository::class);
+        self::assertSame([self::$ids['A']['site']], array_column($sites->listAll(), 'id'));
+        self::assertSame([self::$ids['A']['site']], array_column($sites->rows(), 'id'));
+        self::assertNull($sites->find(self::b('site')));
+        $sites->update(self::b('site'), 'ZZ', 'Renamed');
+        self::assertSame('B', TestDatabase::pdo()->query('SELECT code FROM sites WHERE id = ' . self::b('site'))->fetchColumn(), 'a site out of scope is not modified');
+        $this->assertOutOfScope(fn () => $sites->setActive(self::b('site'), false));
         self::assertNull($sites->findName(self::b('site')));
         self::assertNull($sites->findIdByCode('B'));
         $this->assertOutOfScope(fn () => $sites->create('C', 'Site C'));

@@ -29,6 +29,7 @@ final class AccessMatrixTest extends FunctionalTestCase
     private const MATRIX = [
         '/' => [200, 200, 200, 200, 200],
         '/navigation/counts' => [200, 200, 200, 200, 200],
+        '/profile' => [200, 200, 200, 200, 200],
         '/mails' => [200, 200, 200, 200, 200],
         '/mails/data' => [200, 200, 200, 200, 200],
         '/mails/export' => [200, 200, 200, 200, 200],
@@ -46,6 +47,14 @@ final class AccessMatrixTest extends FunctionalTestCase
         '/notifications' => [200, 200, 200, 200, 200],
         '/notifications/count' => [200, 200, 200, 200, 200],
         '/retention-rules' => [200, 403, 403, 403, 403],
+        '/organization' => [200, 403, 403, 403, 403],
+        '/users' => [200, 403, 403, 403, 403],
+        '/users/data' => [200, 403, 403, 403, 403],
+        '/users/export' => [200, 403, 403, 403, 403],
+        '/users/import' => [200, 403, 403, 403, 403],
+        '/roles' => [200, 403, 403, 403, 403],
+        '/users/new' => [200, 403, 403, 403, 403],
+        '/users/{agent}/edit' => [200, 403, 403, 403, 403],
         '/correspondents' => [200, 200, 403, 403, 403],
         '/correspondents/data' => [200, 200, 403, 403, 403],
         '/correspondents/new' => [200, 200, 403, 403, 403],
@@ -53,6 +62,9 @@ final class AccessMatrixTest extends FunctionalTestCase
         '/correspondents/search' => [200, 200, 200, 200, 200],
         // Signed-in users are sent away from the login page.
         '/login' => [302, 302, 302, 302, 302],
+        '/login/code' => [302, 302, 302, 302, 302],
+        '/password/forgot' => [302, 302, 302, 302, 302],
+        '/password/reset/{token}' => [302, 302, 302, 302, 302],
     ];
 
     /** Query strings required by some JSON endpoints. */
@@ -73,6 +85,7 @@ final class AccessMatrixTest extends FunctionalTestCase
             $this->ids[$role] = TestDatabase::insertUser($site, "{$role}@example.org", 'password-123456', $role);
         }
         $this->ids['correspondent'] = $correspondent;
+        $this->ids['token'] = 0;
 
         $this->actingAs($this->user($this->ids['secretariat']));
         $created = $this->post('/mails', [

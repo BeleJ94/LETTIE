@@ -30,7 +30,8 @@ const columns = [col('reference', 'text'), col('mail_date', 'datetime'), col('su
 test('column sets are complete and translated keys exist in lang files', () => {
     const fr = require('fs').readFileSync(__dirname + '/../../lang/fr.php', 'utf8');
     for (const [name, set] of Object.entries(X.COLUMN_SETS)) {
-        assert.ok(set.length >= 8, name);
+        // Mail documents have 8 columns or more; the user list has 7.
+        assert.ok(set.length >= 7, name);
         for (const c of set) {
             assert.match(c.type, /^(text|subject|date|datetime|enum:[a-z_]+)$/, `${name}.${c.key}`);
             assert.ok(fr.includes(`'${c.key}' =>`), `lang/fr.php js.columns.${c.key}`);

@@ -15,7 +15,7 @@ final class LaunchpadTest extends TestCase
     private const FIGURES = [
         'mine_overdue' => 0, 'mine_today' => 0, 'mine_week' => 0, 'scope_overdue' => 0, 'scope_week' => 0,
         'unread' => 0, 'unassigned' => 0, 'pending' => 0, 'registered_today' => 0,
-        'average_days' => null, 'late_rate' => null, 'absences' => 0, 'retention_rules' => 0,
+        'average_days' => null, 'late_rate' => null, 'absences' => 0, 'retention_rules' => 0, 'active_users' => 0,
     ];
 
     /** @return array<string, array{Role, array<string, list<string>>}> role => group => tile keys (docs/FIORI_DESIGN.md §11) */
@@ -49,7 +49,7 @@ final class LaunchpadTest extends TestCase
                 'mail' => ['new_incoming', 'new_outgoing', 'mails', 'my_week', 'register', 'correspondents'],
                 'steering' => ['overview', 'processing', 'late_rate', 'scope_week'],
                 'workspace' => ['delegations'],
-                'administration' => ['retention'],
+                'administration' => ['users', 'retention'],
             ]],
         ];
     }

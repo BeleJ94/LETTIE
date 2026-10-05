@@ -49,7 +49,7 @@ final class TestDatabase
     {
         $pdo = self::pdo();
         $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
-        foreach (['scheduled_runs', 'notifications', 'retention_rules', 'activity_log', 'mail_links', 'annotations', 'assignments', 'delegations', 'attachments', 'mails', 'mail_sequences', 'correspondents', 'login_attempts', 'users', 'departments', 'sites'] as $table) {
+        foreach (['password_resets', 'scheduled_runs', 'notifications', 'retention_rules', 'activity_log', 'mail_links', 'annotations', 'assignments', 'delegations', 'attachments', 'mails', 'mail_sequences', 'correspondents', 'login_attempts', 'users', 'departments', 'sites'] as $table) {
             $pdo->exec("TRUNCATE TABLE {$table}");
         }
         $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');

@@ -63,7 +63,7 @@ En cas de conflit sur un sujet d'interface, ce document prévaut sur CLAUDE.md.
 
 **Toute vue d'écran déclare son floorplan** en tête de fichier (`/** @floorplan ListReport */`). Floorplans autorisés : **Launchpad, List Report, Object Page, Worklist, Overview Page, Analytical List Page, Wizard**.
 
-Trois écrans ne relèvent d'aucun floorplan Fiori ; ils le déclarent explicitement, avec la raison : `/** @floorplan None — page de connexion */`. Ce sont la **connexion** (avant l'entrée dans l'application), la **page d'erreur** (403, 404, 500) et le **bordereau** (document imprimable). `None` n'est pas une échappatoire : tout nouvel écran de l'application prend un des sept floorplans.
+Quelques écrans ne relèvent d'aucun floorplan Fiori ; ils le déclarent explicitement, avec la raison : `/** @floorplan None — page de connexion */`. Ce sont les **écrans de connexion** (mot de passe, code de double authentification, mot de passe oublié, nouveau mot de passe : avant l'entrée dans l'application), la **page d'erreur** (403, 404, 500) et le **bordereau** (document imprimable). `None` n'est pas une échappatoire : tout nouvel écran de l'application prend un des sept floorplans.
 
 Un test d'architecture vérifie que chaque vue déclare une valeur autorisée. Les écrans pas encore migrés sont nommés dans ce test (`NOT_MIGRATED_YET`) ; la liste ne peut que raccourcir, et un écran en sort quand il déclare son floorplan. Les partiels (`views/partials/`, fichiers `_*.php`) et les layouts ne déclarent rien.
 
@@ -78,8 +78,8 @@ Un test d'architecture vérifie que chaque vue déclare une valeur autorisée. L
 | Connexion, page d'erreur, bordereau | **None** (hors floorplan) | composants UI5 quand il y en a d'utiles ; raison indiquée dans la déclaration |
 | Vue d'ensemble (`/overview`) | **Overview Page** | grille de `ui5-card` : KPI, listes courtes, graphiques simples (§15) |
 | Statistiques (`/statistics`) | **Analytical List Page** | en-tête de filtres + `ui5-card` (Chart.js) + tableau de détail |
-| Registre, Correspondants, Conservation | **List Report** | idem liste du courrier |
-| Fiche correspondant | **Object Page** | idem fiche courrier |
+| Registre, Correspondants, Conservation, Utilisateurs, Sites et services, Rôles et droits | **List Report** | idem liste du courrier (les trois derniers en liste de paramétrage, §12) |
+| Fiche correspondant, compte utilisateur, Mon profil, import d'utilisateurs | **Object Page** | idem fiche courrier |
 
 Les floorplans sont des compositions Fiori : UI5 Web Components n'a pas de composant « List Report » prêt à l'emploi. On respecte leur structure (en-tête, zone de contenu, pied de page), pas une reproduction au pixel près.
 
@@ -165,7 +165,7 @@ Tout ce qui n'est pas de l'interface reste régi par CLAUDE.md : architecture en
 - `ui5-shellbar` : bouton de menu (replie la navigation), logo et titre (retour à l'accueil), **recherche globale** (ouvre la liste du courrier filtrée par `?q=`), **cloche** avec le nombre de notifications non lues (rafraîchi chaque minute), **avatar** aux initiales de l'utilisateur.
 - `ui5-user-menu` (clic sur l'avatar) : nom, rôle et adresse ; **thème** clair/sombre ; **langue** ; **déconnexion**. Un invité (page de connexion) n'a pas de profil : thème et langue sont deux actions directes de la ShellBar.
 - `ui5-side-navigation`, filtrée par permission ; étendue sur poste de travail, repliée sur tablette, en panneau sur téléphone (`ui5-navigation-layout`). Règles :
-  - **Ordre** : le travail quotidien en haut, sans titre de groupe (Accueil, Enregistrer un courrier, Courrier et ses raccourcis, Registre, Correspondants) ; puis le groupe « Pilotage » ; en bas, dans la zone fixe (`slot="fixedItems"`), les réglages personnels et d'administration (Absences, Conservation).
+  - **Ordre** : le travail quotidien en haut, sans titre de groupe (Accueil, Enregistrer un courrier, Courrier et ses raccourcis, Registre, Correspondants) ; puis le groupe « Pilotage » ; en bas, dans la zone fixe (`slot="fixedItems"`), les réglages personnels et d'administration (Absences, Utilisateurs, Sites et services, Conservation). « Mon profil » est dans le menu de l'avatar.
   - **Action de création** : « Enregistrer un courrier » est une entrée `design="Action"`, visible avec `mail.create`. C'est la seule action du menu.
   - **Raccourcis** : « Courrier » ne fait qu'ouvrir et refermer ses raccourcis (pas d'adresse propre : cliquer pour replier ne doit pas changer d'écran). Dessous, des `ui5-side-navigation-sub-item` ouvrent la liste entière (Tous les courriers) ou déjà filtrée (Mes courriers, Mes retards, À affecter), avec les mêmes adresses que les tuiles. Le raccourci dont les paramètres correspondent à l'adresse est sélectionné.
   - **Compteurs** : « Mes retards (3) », « À affecter (5) », lus sur `/navigation/counts` au chargement puis chaque minute ; rien entre parenthèses quand le compte est à zéro. Un utilisateur ne reçoit que les compteurs de ses permissions.
@@ -199,7 +199,8 @@ Tout ce qui n'est pas de l'interface reste régi par CLAUDE.md : architecture en
 | | Clôtures en retard | % clos après l'échéance, 30 derniers jours | — | `reports.view` | `/statistics` |
 | | Échéances à venir | échéances sous 7 jours, tous services | — | `reports.view` | `/mails` |
 | **Mon espace** | Mes absences | délégations en cours ou à venir | — | `mail.view` | `/delegations` |
-| **Administration** | Conservation | règles actives | — | `settings.manage` | `/retention-rules` |
+| **Administration** | Utilisateurs | comptes actifs | — | `users.manage` | `/users` |
+| | Conservation | règles actives | — | `settings.manage` | `/retention-rules` |
 
 « Mes courriers » = ceux qui me sont affectés pour traitement, et ceux d'un collègue absent que je remplace.
 
@@ -211,7 +212,7 @@ Tout ce qui n'est pas de l'interface reste régi par CLAUDE.md : architecture en
 | **Secrétariat** | Mes retards · À affecter · Retards du périmètre · Aujourd'hui · Notifications | Enregistrer entrant · Créer sortant · Courriers · Mes échéances · Registre · Correspondants | — | Mes absences | — |
 | **Chef de service** | Mes retards · À affecter · Retards du périmètre · Aujourd'hui · Notifications | Courriers · Mes échéances · Registre | Vue d'ensemble · Délai · Clôtures en retard · Échéances à venir | Mes absences | — |
 | **Direction** (tous sites) | Retards du périmètre · Notifications | Courriers · Registre | Vue d'ensemble · Délai · Clôtures en retard · Échéances à venir | Mes absences | — |
-| **Administrateur** | comme le secrétariat | comme le secrétariat | comme le chef de service | Mes absences | Conservation |
+| **Administrateur** | comme le secrétariat | comme le secrétariat | comme le chef de service | Mes absences | Utilisateurs · Conservation |
 
 Ce tableau est vérifié par `tests/Domain/LaunchpadTest.php`. Ajouter une tuile : une ligne dans `Launchpad::TILES`, ses libellés dans `lang/*.php` (`launchpad.tiles.<clé>`), son chiffre dans `LaunchpadService`, son icône dans `tools/ui5/components.mjs` si elle n'y est pas, puis ces deux tableaux et le test.
 

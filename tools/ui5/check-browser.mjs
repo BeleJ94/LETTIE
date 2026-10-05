@@ -652,6 +652,44 @@ try {
     await navPage.waitForURL('**/mails/new');
     expect(true, '"Enregistrer un courrier" opens the registration from any screen');
 
+    console.log('User administration:');
+    const usersPage = await open(await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'fr-FR' }), 'admin');
+    await usersPage.goto(BASE_URL + '/users', { waitUntil: 'networkidle' });
+    await usersPage.waitForSelector('table.lt-dt tbody tr[data-id]');
+    await loaded(usersPage);
+    expect((await rowsOf(usersPage, 'status')).every((text) => text === 'Actif'), 'active accounts listed, state as a tag');
+    await usersPage.locator('[data-lt-href="/users/new"]').click();
+    await usersPage.waitForURL('**/users/new');
+    await usersPage.waitForFunction(() => document.documentElement.classList.contains('lt-ui5-ready'));
+    const fill = (id, value) => usersPage.locator('#' + id).evaluate((el, v) => { el.value = v; }, value);
+    await usersPage.locator('[data-lt-submit="user-form"]').click();
+    await usersPage.waitForLoadState('networkidle');
+    await usersPage.waitForFunction(() => document.documentElement.classList.contains('lt-ui5-ready'));
+    expect(await usersPage.locator('#first_name').evaluate((el) => el.valueState) === 'Negative' && await usersPage.locator('[data-lt-messages-button]').count() === 1,
+        'empty required fields come back flagged, with the message popover');
+    await fill('first_name', 'Camille');
+    await fill('last_name', 'Navigateur');
+    await fill('email', 'camille.navigateur@demo.lettie.fr');
+    await fill('password', 'court');
+    await usersPage.locator('[data-lt-submit="user-form"]').click();
+    await usersPage.waitForLoadState('networkidle');
+    await usersPage.waitForFunction(() => document.documentElement.classList.contains('lt-ui5-ready'));
+    expect(await usersPage.locator('#password').evaluate((el) => el.valueState === 'Negative' && el.value === ''), 'a short password is refused in its field and never sent back');
+    expect(await usersPage.locator('#first_name').evaluate((el) => el.value) === 'Camille', 'the other values are kept');
+    await fill('password', 'un-mot-de-passe-long');
+    await usersPage.locator('[data-lt-submit="user-form"]').click();
+    await usersPage.waitForURL('**/users');
+    await usersPage.waitForSelector('table.lt-dt tbody tr[data-id]');
+    await loaded(usersPage);
+    expect((await rowsOf(usersPage, 'name')).includes('Camille Navigateur'), 'the new account appears in the list');
+    await usersPage.locator('table.lt-dt tbody tr', { hasText: 'Camille Navigateur' }).locator('td').first().click();
+    await usersPage.waitForURL(/\/users\/\d+\/edit$/);
+    await usersPage.waitForFunction(() => document.documentElement.classList.contains('lt-ui5-ready'));
+    await usersPage.locator('[data-lt-open-dialog="user-password"]').click();
+    await usersPage.locator('#user-password [data-lt-dialog-submit]').click();
+    expect(await usersPage.locator('#user-password').evaluate((d) => d.open) && await usersPage.locator('#new_password').evaluate((el) => el.valueState) === 'Negative',
+        'a new password is given in a dialog, empty value flagged');
+
     console.log('Touch screen:');
     const touch = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: 'fr-FR' });
     const phone = await open(touch, 'agent');

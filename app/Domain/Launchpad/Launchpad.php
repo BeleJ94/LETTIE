@@ -60,6 +60,7 @@ final class Launchpad
         // Personal workspace
         'delegations' => ['workspace', [Permission::MailView], 'absences', self::STATE_NONE, 'planned', 'away', '/delegations'],
         // Administration
+        'users' => ['administration', [Permission::UsersManage], 'active_users', self::STATE_NONE, 'active_users', 'group', '/users'],
         'retention' => ['administration', [Permission::SettingsManage], 'retention_rules', self::STATE_NONE, 'active_rules', 'history', '/retention-rules'],
     ];
 

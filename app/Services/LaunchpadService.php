@@ -13,6 +13,7 @@ use App\Repositories\DeadlineRepository;
 use App\Repositories\DelegationRepository;
 use App\Repositories\RetentionRepository;
 use App\Repositories\StatsRepository;
+use App\Repositories\UserRepository;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -29,6 +30,7 @@ final class LaunchpadService
         private readonly StatsRepository $stats,
         private readonly DelegationRepository $delegations,
         private readonly RetentionRepository $retention,
+        private readonly UserRepository $users,
         private readonly Clock $clock,
     ) {
     }
@@ -95,6 +97,9 @@ final class LaunchpadService
                 $this->delegations->forDelegator($actor->user->id),
                 static fn ($delegation): bool => $delegation->endsOn >= $today,
             ));
+        }
+        if (isset($needed['active_users'])) {
+            $figures['active_users'] = $this->users->countActive();
         }
         if (isset($needed['retention_rules'])) {
             $figures['retention_rules'] = count($this->retention->rules(activeOnly: true));

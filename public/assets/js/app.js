@@ -284,6 +284,8 @@
             LT.theme.toggle();
         } else if (item.hasAttribute('data-lt-locale')) {
             switchLocale(item.getAttribute('data-lt-locale'));
+        } else if (item.hasAttribute('data-lt-href')) {
+            go(item.getAttribute('data-lt-href'));
         }
     });
     onUi5('#lt-user-menu', 'sign-out-click', function () {

@@ -65,6 +65,32 @@ final class LoginAttemptRepository extends Repository
         return self::toDates($stmt->fetchAll(\PDO::FETCH_COLUMN));
     }
 
+    /**
+     * Last sign-in attempts of an account, most recent first (kept until the daily purge).
+     *
+     * @return list<array{at: DateTimeImmutable, succeeded: bool, ip: ?string}>
+     */
+    public function recentForEmail(string $email, int $limit = 10): array
+    {
+        $stmt = $this->pdo->prepare(
+            'SELECT attempted_at, succeeded, ip_address FROM login_attempts WHERE email = :email ORDER BY attempted_at DESC, id DESC LIMIT ' . max(1, $limit)
+        );
+        $stmt->execute(['email' => $email]);
+        $utc = new DateTimeZone('UTC');
+        return array_map(static function (array $r) use ($utc): array {
+            $ip = $r['ip_address'] !== null ? @inet_ntop((string) $r['ip_address']) : false;
+            return ['at' => new DateTimeImmutable((string) $r['attempted_at'], $utc), 'succeeded' => (bool) $r['succeeded'], 'ip' => $ip === false ? null : $ip];
+        }, $stmt->fetchAll());
+    }
+
+    /** Unlocks an account: its recent failures no longer count. Returns the number of failures removed. */
+    public function clearFailuresForEmail(string $email, DateTimeImmutable $since): int
+    {
+        $stmt = $this->pdo->prepare('DELETE FROM login_attempts WHERE email = :email AND succeeded = 0 AND attempted_at >= :since');
+        $stmt->execute(['email' => $email, 'since' => $since->format(self::DATETIME_FORMAT)]);
+        return $stmt->rowCount();
+    }
+
     public function purgeOlderThan(DateTimeImmutable $before): int
     {
         $stmt = $this->pdo->prepare('DELETE FROM login_attempts WHERE attempted_at < :before');
